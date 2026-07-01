@@ -166,7 +166,7 @@ const runTest = async () => {
 
   // 13. TEST MOCK OTP VERIFICATION FLOW
   console.log('\n13. Testing OTP Verification Flow...');
-  const testEmail = 'tester-profile@example.com';
+  const testEmail = `tester-profile-${Date.now()}@example.com`;
   try {
     await request('/users/register', 'POST', {
       fullName: 'OTP Tester',
