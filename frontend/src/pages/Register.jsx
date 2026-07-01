@@ -166,137 +166,141 @@ export default function Register() {
           )}
 
           {/* Forms Section */}
-          {!otpStep ? (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              {/* Full Name Input */}
-              <div className="flex flex-col gap-1.5">
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                    <Icons.User className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
-                    required
-                    disabled={loading}
-                  />
-                </div>
+          <form onSubmit={otpStep ? handleVerifySubmit : handleSubmit} className="flex flex-col gap-4">
+            {/* Full Name Input */}
+            <div className="flex flex-col gap-1.5">
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                  <Icons.User className="w-4 h-4" />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  required
+                  disabled={loading || otpStep}
+                />
               </div>
+            </div>
 
-              {/* Email Input */}
-              <div className="flex flex-col gap-1.5">
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                    <Icons.Mail className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
-                    required
-                    disabled={loading}
-                  />
-                </div>
+            {/* Email Input */}
+            <div className="flex flex-col gap-1.5">
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                  <Icons.Mail className="w-4 h-4" />
+                </span>
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  required
+                  disabled={loading || otpStep}
+                />
               </div>
+            </div>
 
-              {/* Password Input */}
-              <div className="flex flex-col gap-1.5">
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                    <Icons.Lock className="w-4 h-4" />
-                  </span>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Create a password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
-                    required
-                    disabled={loading}
-                  />
+            {/* Password Input */}
+            <div className="flex flex-col gap-1.5">
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                  <Icons.Lock className="w-4 h-4" />
+                </span>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Create a password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  required
+                  disabled={loading || otpStep}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-white"
+                  disabled={loading || otpStep}
+                >
+                  {showPassword ? <Icons.EyeOff className="w-4 h-4" /> : <Icons.Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Terms and Conditions Text */}
+            <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+              By signing up, you agree to our <span className="text-white hover:underline cursor-pointer">Terms of Service</span> and neighborhood code of conduct.
+            </p>
+
+            {/* Send OTP Button (Only visible if !otpStep) */}
+            {!otpStep && (
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-brand-primary hover:bg-[#E05300] text-black font-extrabold py-3.5 rounded-xl text-xs transition-all duration-200 mt-2 shadow-lg shadow-brand-primary/10 select-none active:scale-95 disabled:opacity-50"
+              >
+                {loading ? 'Sending Code...' : 'Send Verification OTP'}
+              </button>
+            )}
+
+            {/* Verification Section (Only visible if otpStep) */}
+            {otpStep && (
+              <div className="flex flex-col gap-4 mt-2 border-t border-[#2A2A2D] pt-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400">Enter Verification OTP</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                      <Icons.Key className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="6-digit code"
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-4 text-center tracking-[0.2em] font-mono text-sm text-white placeholder-slate-500 focus:outline-none transition-colors"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                {/* Main Sign Up / Complete Registration Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-brand-primary hover:bg-[#E05300] text-black font-extrabold py-3.5 rounded-xl text-xs transition-all duration-200 shadow-lg shadow-brand-primary/10 select-none active:scale-95 disabled:opacity-50"
+                >
+                  {loading ? 'Registering...' : 'Sign Up & Verify'}
+                </button>
+
+                {/* Actions & Resend OTP */}
+                <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-white"
+                    onClick={() => setOtpStep(false)}
+                    className="hover:underline flex items-center gap-1"
                     disabled={loading}
                   >
-                    {showPassword ? <Icons.EyeOff className="w-4 h-4" /> : <Icons.Eye className="w-4 h-4" />}
+                    <Icons.ArrowLeft className="w-3 h-3" /> Change details
+                  </button>
+                  
+                  <button
+                    type="button"
+                    disabled={cooldown > 0 || resending}
+                    onClick={handleResend}
+                    className={`text-brand-primary transition-all active:scale-95 ${
+                      cooldown > 0 || resending ? 'opacity-40 cursor-not-allowed' : 'hover:underline'
+                    }`}
+                  >
+                    {cooldown > 0 ? `Resend Code (${cooldown}s)` : resending ? 'Resending...' : 'Resend Code'}
                   </button>
                 </div>
               </div>
-
-              {/* Terms and Conditions Text */}
-              <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                By signing up, you agree to our <span className="text-white hover:underline cursor-pointer">Terms of Service</span> and neighborhood code of conduct.
-              </p>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-brand-primary hover:bg-[#E05300] text-black font-extrabold py-3.5 rounded-xl text-xs transition-all duration-200 mt-2 shadow-lg shadow-brand-primary/10 select-none active:scale-95 disabled:opacity-50"
-              >
-                {loading ? 'Processing...' : 'Sign Up'}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifySubmit} className="flex flex-col gap-4">
-              {/* Verification Code Input */}
-              <div className="flex flex-col gap-1.5">
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                    <Icons.Key className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Enter 6-digit code"
-                    maxLength={6}
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                    className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-4 text-center tracking-[0.2em] font-mono text-sm text-white placeholder-slate-500 focus:outline-none transition-colors"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-brand-primary hover:bg-[#E05300] text-black font-extrabold py-3.5 rounded-xl text-xs transition-all duration-200 mt-2 shadow-lg shadow-brand-primary/10 select-none active:scale-95 disabled:opacity-50"
-              >
-                {loading ? 'Verifying...' : 'Verify & Complete Sign Up'}
-              </button>
-
-              {/* Actions & Resend OTP */}
-              <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setOtpStep(false)}
-                  className="hover:underline flex items-center gap-1"
-                >
-                  <Icons.ArrowLeft className="w-3 h-3" /> Back to details
-                </button>
-                
-                <button
-                  type="button"
-                  disabled={cooldown > 0 || resending}
-                  onClick={handleResend}
-                  className={`text-brand-primary transition-all active:scale-95 ${
-                    cooldown > 0 || resending ? 'opacity-40 cursor-not-allowed' : 'hover:underline'
-                  }`}
-                >
-                  {cooldown > 0 ? `Resend Code (${cooldown}s)` : resending ? 'Resending...' : 'Resend Code'}
-                </button>
-              </div>
-            </form>
-          )}
+            )}
+          </form>
 
           {/* Social Sign-In Divider */}
           {!otpStep && (
