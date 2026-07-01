@@ -19,8 +19,10 @@ public class EmailService {
 
     public EmailService() {
         String envKey = System.getenv("RESEND_API_KEY");
-        this.resendApiKey = (envKey != null && !envKey.trim().isEmpty()) ? envKey : "re_ddCL25FV_ARP6vAZ785n3kNaZoYAfZSWw";
+        this.resendApiKey = (envKey != null && !envKey.trim().isEmpty()) ? envKey.trim() : "re_ddCL25FV_ARP6vAZ785n3kNaZoYAfZSWw";
         this.httpClient = HttpClient.newHttpClient();
+        String maskedKey = resendApiKey.length() > 10 ? resendApiKey.substring(0, 7) + "..." + resendApiKey.substring(resendApiKey.length() - 4) : "INVALID_LENGTH";
+        mailLogs.add(java.time.LocalDateTime.now() + " - [INIT] Loaded Resend API Key: " + maskedKey + " (Source: " + (envKey != null ? "Environment" : "Hardcoded") + ")");
     }
 
     public void sendEmail(String to, String subject, String body) {
