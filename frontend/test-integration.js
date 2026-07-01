@@ -1,6 +1,6 @@
 // test-integration.js - End-to-end integration test runner
 
-const BASE_URL = 'http://localhost:1026/api';
+const BASE_URL = 'https://borrowit-backend-3xdn.onrender.com/api';
 
 const request = async (path, method = 'GET', body = null, token = null) => {
   const headers = { 'Content-Type': 'application/json' };
