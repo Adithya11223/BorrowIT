@@ -156,6 +156,24 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const completeSignupSession = async (token, user) => {
+    localStorage.setItem('borrowit_token', token);
+    const mappedUser = {
+      ...user,
+      name: user.fullName
+    };
+    setCurrentUser(mappedUser);
+    localStorage.setItem('borrowit_user', JSON.stringify(mappedUser));
+    try {
+      const userReqs = await api.fetchBorrowRequests();
+      setRequests(userReqs);
+    } catch {
+      setRequests([]);
+    }
+    addToast('Success', `Account created! Welcome, ${mappedUser.name}`, 'success');
+    return mappedUser;
+  };
+
   const socialLogin = async (provider) => {
     try {
       const user = await api.socialLogin(provider);
@@ -453,6 +471,7 @@ export const AppProvider = ({ children }) => {
       loading,
       login,
       register,
+      completeSignupSession,
       socialLogin,
       logout,
       editProfile,

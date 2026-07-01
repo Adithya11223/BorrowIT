@@ -10,7 +10,7 @@ import * as Icons from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Register() {
-  const { login, socialLogin, addToast } = useApp();
+  const { login, socialLogin, completeSignupSession, addToast } = useApp();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -43,28 +43,18 @@ export default function Register() {
       setLoading(true);
       setError('');
       
-      // Step 1: Create user on the backend
-      const user = await api.registerOnly(fullName, email, password);
+      // Step 1: Initiate creation on backend (checks uniqueness, stores temporarily, sends OTP)
+      const res = await api.initiateRegistration(fullName, email, password);
 
-      // Check if user is pre-verified (e.g. social auth mockup or admin profile override)
-      if (email.endsWith('.user@example.com') || email === 'adithya@example.com' || email === 'shubham@example.com') {
-        await login(email, password);
-        navigate('/');
+      setOtpStep(true);
+      if (res && res.verificationOtp) {
+        addToast('Verification Code Generated', `SMTP not set up on Render. Code: ${res.verificationOtp}`, 'success');
+        setOtpCode(res.verificationOtp);
       } else {
-        setOtpStep(true);
-        if (user && user.verificationOtp) {
-          addToast('Verification Code Generated', `SMTP not set up on Render. Code: ${user.verificationOtp}`, 'success');
-          setOtpCode(user.verificationOtp);
-        } else {
-          addToast('Verification Sent', 'Please check your email/logs for the 6-digit OTP code.', 'info');
-        }
+        addToast('Verification Sent', 'Please check your email/logs for the 6-digit OTP code.', 'info');
       }
     } catch (err) {
-      if (err.message && err.message.includes('not verified')) {
-        setOtpStep(true);
-      } else {
-        setError(err.message || 'Registration failed');
-      }
+      setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -80,12 +70,11 @@ export default function Register() {
       setLoading(true);
       setError('');
       
-      // Step 2: Validate OTP code
-      await api.verifyOtp(email, otpCode);
-      addToast('Account Verified', 'Verification successful! Logging you in...', 'success');
+      // Step 2: Validate OTP code & get JWT directly
+      const data = await api.verifyRegistrationOtp(email, otpCode);
       
-      // Auto login after verification
-      await login(email, password);
+      // Store session and login
+      await completeSignupSession(data.token, data.user);
       navigate('/');
     } catch (err) {
       setError(err.message || 'Verification failed. Please try again.');
@@ -99,8 +88,13 @@ export default function Register() {
     try {
       setResending(true);
       setError('');
-      await api.resendOtp(email);
-      addToast('Code Resent', 'A new verification code has been dispatched.', 'success');
+      const res = await api.resendRegistrationOtp(email);
+      if (res && res.verificationOtp) {
+        addToast('Verification Code Resent', `SMTP not set up. Code: ${res.verificationOtp}`, 'success');
+        setOtpCode(res.verificationOtp);
+      } else {
+        addToast('Code Resent', 'A new verification code has been dispatched.', 'success');
+      }
       setCooldown(30);
     } catch (err) {
       setError(err.message || 'Failed to resend code');

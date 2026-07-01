@@ -27,6 +27,34 @@ public class UserController {
         return userService.convertToDTO(userService.registerUser(user));
     }
 
+    // Initiate Registration (Temporary storage & OTP dispatch)
+    @PostMapping("/register/initiate")
+    public org.springframework.http.ResponseEntity<?> initiateRegistration(@Valid @RequestBody User user) {
+        com.borrowx.backend.dto.PendingRegistration pending = userService.initiateRegistration(user);
+        return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                "message", "Verification code dispatched successfully",
+                "verificationOtp", pending.getOtp() // Return OTP in response for development convenience
+        ));
+    }
+
+    // Resend Registration OTP
+    @PostMapping("/register/resend")
+    public org.springframework.http.ResponseEntity<?> resendRegistrationOtp(@RequestParam String email) {
+        String otp = userService.resendRegistrationOtp(email);
+        return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                "message", "Verification code resent successfully",
+                "verificationOtp", otp
+        ));
+    }
+
+    // Complete Registration (Verify OTP & Create database entry)
+    @PostMapping("/register/verify")
+    public LoginResponseDTO completeRegistration(
+            @RequestParam String email,
+            @RequestParam String otp) {
+        return userService.completeRegistration(email, otp);
+    }
+
     // Login User
     @PostMapping("/login")
     public LoginResponseDTO login(@RequestBody LoginRequestDTO loginRequest) {

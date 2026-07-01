@@ -20,37 +20,24 @@ const request = async (path, method = 'GET', body = null, token = null) => {
 const runTest = async () => {
   console.log('=== STARTING BORROWX FULL INTEGRATION TEST ===\n');
 
-  // 1. REGISTER & LOGIN ADITHYA
+  // 1. REGISTER & LOGIN ADITHYA (OTP Flow)
   console.log('1. Registering/Logging in Adithya...');
   let adithyaToken;
   let adithyaUser;
-  const adithyaEmail = 'test-adithya@example.com';
-  try {
-    await request('/users/register', 'POST', {
-      fullName: 'Adithya Verma',
-      email: adithyaEmail,
-      password: 'password123',
-      phoneNumber: '7075547800'
-    });
-    console.log('Adithya registered successfully!');
-  } catch (err) {
-    console.log('Adithya already registered.');
-  }
-
-  // Verify OTP for Adithya
-  try {
-    await request(`/users/verify-otp?email=${encodeURIComponent(adithyaEmail)}&otp=123456`, 'POST');
-    console.log('Adithya OTP verified successfully!');
-  } catch (err) {
-    console.log('Adithya already verified.');
-  }
+  const adithyaEmail = `test-adithya-${Date.now()}@example.com`;
   
-  const loginAdithya = await request('/users/login', 'POST', {
+  console.log(`Initiating registration for Adithya (${adithyaEmail})...`);
+  await request('/users/register/initiate', 'POST', {
+    fullName: 'Adithya Verma',
     email: adithyaEmail,
-    password: 'password123'
+    password: 'password123',
+    phoneNumber: '7075547800'
   });
-  adithyaToken = loginAdithya.token;
-  adithyaUser = loginAdithya.user;
+
+  console.log('Verifying registration OTP for Adithya...');
+  const adithyaRegisterResponse = await request(`/users/register/verify?email=${encodeURIComponent(adithyaEmail)}&otp=123456`, 'POST');
+  adithyaToken = adithyaRegisterResponse.token;
+  adithyaUser = adithyaRegisterResponse.user;
   console.log(`Adithya Logged In! Token: ${adithyaToken.substring(0, 15)}... User ID: ${adithyaUser.id}\n`);
 
   // 2. ADITHYA ADDS AN ITEM FOR LENDING
@@ -69,37 +56,24 @@ const runTest = async () => {
   }, adithyaToken);
   console.log(`Item Listed! Item ID: ${newItem.id}, Title: ${newItem.itemName}, Condition: ${newItem.itemCondition}, Deposit: $${newItem.deposit}\n`);
 
-  // 3. REGISTER & LOGIN SHUBHAM
+  // 3. REGISTER & LOGIN SHUBHAM (OTP Flow)
   console.log('3. Registering/Logging in Shubham...');
   let shubhamToken;
   let shubhamUser;
-  const shubhamEmail = 'test-shubham@example.com';
-  try {
-    await request('/users/register', 'POST', {
-      fullName: 'Shubham Kumar',
-      email: shubhamEmail,
-      password: 'password123',
-      phoneNumber: '9876543210'
-    });
-    console.log('Shubham registered successfully!');
-  } catch (err) {
-    console.log('Shubham already registered.');
-  }
-
-  // Verify OTP for Shubham
-  try {
-    await request(`/users/verify-otp?email=${encodeURIComponent(shubhamEmail)}&otp=123456`, 'POST');
-    console.log('Shubham OTP verified successfully!');
-  } catch (err) {
-    console.log('Shubham already verified.');
-  }
+  const shubhamEmail = `test-shubham-${Date.now()}@example.com`;
   
-  const loginShubham = await request('/users/login', 'POST', {
+  console.log(`Initiating registration for Shubham (${shubhamEmail})...`);
+  await request('/users/register/initiate', 'POST', {
+    fullName: 'Shubham Kumar',
     email: shubhamEmail,
-    password: 'password123'
+    password: 'password123',
+    phoneNumber: '9876543210'
   });
-  shubhamToken = loginShubham.token;
-  shubhamUser = loginShubham.user;
+
+  console.log('Verifying registration OTP for Shubham...');
+  const shubhamRegisterResponse = await request(`/users/register/verify?email=${encodeURIComponent(shubhamEmail)}&otp=123456`, 'POST');
+  shubhamToken = shubhamRegisterResponse.token;
+  shubhamUser = shubhamRegisterResponse.user;
   console.log(`Shubham Logged In! Token: ${shubhamToken.substring(0, 15)}... User ID: ${shubhamUser.id}\n`);
 
   // 4. SHUBHAM FETCHES ITEM CATALOG
@@ -164,32 +138,30 @@ const runTest = async () => {
   const adithyaFinalNotifs = await request('/notifications', 'GET', null, adithyaToken);
   console.log('Adithya Notifications:', adithyaFinalNotifs.map(n => `[${n.title}] - ${n.message}`));
 
-  // 13. TEST MOCK OTP VERIFICATION FLOW
-  console.log('\n13. Testing OTP Verification Flow...');
+  // 13. TEST MOCK OTP VERIFICATION FLOW (TEMPORARY STORAGE)
+  console.log('\n13. Testing OTP Verification Flow (Temporary Storage)...');
   const testEmail = `tester-profile-${Date.now()}@example.com`;
-  try {
-    await request('/users/register', 'POST', {
-      fullName: 'OTP Tester',
-      email: testEmail,
-      password: 'password123',
-      phoneNumber: '9000000000'
-    });
-    console.log('OTP Tester registered (unverified)!');
-  } catch (err) {
-    console.log('OTP Tester already registered.');
-  }
+  
+  // Initiate registration
+  await request('/users/register/initiate', 'POST', {
+    fullName: 'OTP Tester',
+    email: testEmail,
+    password: 'password123',
+    phoneNumber: '9000000000'
+  });
+  console.log('OTP Tester registration initiated (stored temporarily).');
 
-  // Attempt login - should fail with 400 Bad Request
+  // Attempt login - should fail because user is not yet created in the DB
   try {
     await request('/users/login', 'POST', { email: testEmail, password: 'password123' });
-    throw new Error('Login succeeded for unverified user (FAILURE)');
+    throw new Error('Login succeeded for uncreated user (FAILURE)');
   } catch (err) {
-    console.log('Login failed as expected for unverified user:', err.message);
+    console.log('Login failed as expected for pending user:', err.message);
   }
 
-  // Verify OTP
-  await request(`/users/verify-otp?email=${encodeURIComponent(testEmail)}&otp=123456`, 'POST');
-  console.log('OTP verified successfully!');
+  // Verify OTP (completes registration and creates user in DB)
+  await request(`/users/register/verify?email=${encodeURIComponent(testEmail)}&otp=123456`, 'POST');
+  console.log('OTP verified and user created in DB!');
 
   // Attempt login again - should succeed
   const testerLogin = await request('/users/login', 'POST', { email: testEmail, password: 'password123' });

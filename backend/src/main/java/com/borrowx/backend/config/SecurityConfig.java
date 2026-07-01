@@ -59,6 +59,9 @@ public class SecurityConfig {
                         // Public APIs
                         .requestMatchers(
                                 "/api/users/register",
+                                "/api/users/register/initiate",
+                                "/api/users/register/resend",
+                                "/api/users/register/verify",
                                 "/api/users/login",
                                 "/api/users/verify-otp",
                                 "/api/users/resend-otp",
