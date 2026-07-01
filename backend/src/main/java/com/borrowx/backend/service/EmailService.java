@@ -19,13 +19,25 @@ public class EmailService {
 
     public EmailService() {
         String envKey = System.getenv("RESEND_API_KEY");
-        this.resendApiKey = (envKey != null && !envKey.trim().isEmpty()) ? envKey.trim() : "re_ddCL25FV_ARP6vAZ785n3kNaZoYAfZSWw";
+        // No hardcoded key fallback to comply with security requirements
+        this.resendApiKey = (envKey != null && !envKey.trim().isEmpty()) ? envKey.trim() : "";
         this.httpClient = HttpClient.newHttpClient();
-        String maskedKey = resendApiKey.length() > 10 ? resendApiKey.substring(0, 7) + "..." + resendApiKey.substring(resendApiKey.length() - 4) : "INVALID_LENGTH";
-        mailLogs.add(java.time.LocalDateTime.now() + " - [INIT] Loaded Resend API Key: " + maskedKey + " (Source: " + (envKey != null ? "Environment" : "Hardcoded") + ")");
+        
+        String maskedKey = resendApiKey.isEmpty() 
+                ? "EMPTY_KEY" 
+                : (resendApiKey.length() > 10 ? resendApiKey.substring(0, 7) + "..." + resendApiKey.substring(resendApiKey.length() - 4) : "INVALID_LENGTH");
+        mailLogs.add(java.time.LocalDateTime.now() + " - [INIT] Loaded Resend API Key: " + maskedKey + " (Source: Environment)");
     }
 
     public void sendEmail(String to, String subject, String body) {
+        if (resendApiKey.isEmpty()) {
+            String logMsg = "[ERROR] RESEND_API_KEY is not configured in the Environment Variables!";
+            System.err.println(logMsg);
+            mailLogs.add(java.time.LocalDateTime.now() + " - " + logMsg);
+            printFallback(to, subject, body);
+            return;
+        }
+
         java.util.concurrent.CompletableFuture.runAsync(() -> {
             try {
                 String escapedTo = escapeJson(to);
@@ -33,7 +45,7 @@ public class EmailService {
                 String escapedBody = escapeJson(body);
 
                 String jsonPayload = String.format(
-                    "{\"from\":\"onboarding@resend.dev\",\"to\":[\"%s\"],\"subject\":\"%s\",\"text\":\"%s\"}",
+                    "{\"from\":\"BorrowIt <onboarding@resend.dev>\",\"to\":[\"%s\"],\"subject\":\"%s\",\"html\":\"%s\"}",
                     escapedTo, escapedSubject, escapedBody
                 );
 

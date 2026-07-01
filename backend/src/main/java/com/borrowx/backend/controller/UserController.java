@@ -21,16 +21,15 @@ public class UserController {
         this.userService = userService;
     }
 
-    // Register User
-    @PostMapping("/register")
-    public UserResponseDTO register(@Valid @RequestBody User user) {
-        return userService.convertToDTO(userService.registerUser(user));
-    }
-
-    // Initiate Registration (Temporary storage & OTP dispatch)
+    // Initiate Registration (Step 1 Name/Email -> generate & send OTP)
     @PostMapping("/register/initiate")
-    public org.springframework.http.ResponseEntity<?> initiateRegistration(@Valid @RequestBody User user) {
-        userService.initiateRegistration(user);
+    public org.springframework.http.ResponseEntity<?> initiateRegistration(@RequestBody java.util.Map<String, String> payload) {
+        String fullName = payload.get("fullName");
+        String email = payload.get("email");
+        if (fullName == null || fullName.trim().isEmpty() || email == null || email.trim().isEmpty()) {
+            throw new com.borrowx.backend.exception.BadRequestException("Full Name and Email are required.");
+        }
+        userService.initiateRegistration(fullName, email);
         return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
                 "message", "Verification code dispatched successfully"
         ));
@@ -45,12 +44,21 @@ public class UserController {
         ));
     }
 
-    // Complete Registration (Verify OTP & Create database entry)
+    // Verify Registration OTP (Step 3 verify OTP)
     @PostMapping("/register/verify")
-    public LoginResponseDTO completeRegistration(
+    public org.springframework.http.ResponseEntity<?> verifyRegistrationOtp(
             @RequestParam String email,
             @RequestParam String otp) {
-        return userService.completeRegistration(email, otp);
+        userService.verifyRegistrationOtp(email, otp);
+        return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                "message", "Email verified successfully"
+        ));
+    }
+
+    // Complete Registration (Step 4 final user creation & JWT login)
+    @PostMapping("/register")
+    public LoginResponseDTO completeRegistration(@Valid @RequestBody User user) {
+        return userService.completeRegistration(user);
     }
 
     // Reset Database (Wipes all tables)
@@ -104,23 +112,5 @@ public class UserController {
         return "User deleted successfully!";
     }
 
-    // Verify OTP
-    @PostMapping("/verify-otp")
-    public org.springframework.http.ResponseEntity<?> verifyOtp(
-            @RequestParam String email,
-            @RequestParam String otp) {
-        userService.verifyOtp(email, otp);
-        return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Account verified successfully"));
-    }
 
-    // Resend OTP
-    @PostMapping("/resend-otp")
-    public org.springframework.http.ResponseEntity<?> resendOtp(
-            @RequestParam String email) {
-        String otp = userService.resendOtp(email);
-        return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
-                "message", "Verification code resent",
-                "verificationOtp", otp
-        ));
-    }
 }

@@ -30,13 +30,19 @@ const runTest = async () => {
   console.log(`Initiating registration for Adithya (${adithyaEmail})...`);
   await request('/users/register/initiate', 'POST', {
     fullName: 'Adithya Verma',
+    email: adithyaEmail
+  });
+
+  console.log('Verifying registration OTP for Adithya...');
+  await request(`/users/register/verify?email=${encodeURIComponent(adithyaEmail)}&otp=123456`, 'POST');
+
+  console.log('Completing registration for Adithya...');
+  const adithyaRegisterResponse = await request('/users/register', 'POST', {
+    fullName: 'Adithya Verma',
     email: adithyaEmail,
     password: 'password123',
     phoneNumber: adithyaPhone
   });
-
-  console.log('Verifying registration OTP for Adithya...');
-  const adithyaRegisterResponse = await request(`/users/register/verify?email=${encodeURIComponent(adithyaEmail)}&otp=123456`, 'POST');
   adithyaToken = adithyaRegisterResponse.token;
   adithyaUser = adithyaRegisterResponse.user;
   console.log(`Adithya Logged In! Token: ${adithyaToken.substring(0, 15)}... User ID: ${adithyaUser.id}\n`);
@@ -67,13 +73,19 @@ const runTest = async () => {
   console.log(`Initiating registration for Shubham (${shubhamEmail})...`);
   await request('/users/register/initiate', 'POST', {
     fullName: 'Shubham Kumar',
+    email: shubhamEmail
+  });
+
+  console.log('Verifying registration OTP for Shubham...');
+  await request(`/users/register/verify?email=${encodeURIComponent(shubhamEmail)}&otp=123456`, 'POST');
+
+  console.log('Completing registration for Shubham...');
+  const shubhamRegisterResponse = await request('/users/register', 'POST', {
+    fullName: 'Shubham Kumar',
     email: shubhamEmail,
     password: 'password123',
     phoneNumber: shubhamPhone
   });
-
-  console.log('Verifying registration OTP for Shubham...');
-  const shubhamRegisterResponse = await request(`/users/register/verify?email=${encodeURIComponent(shubhamEmail)}&otp=123456`, 'POST');
   shubhamToken = shubhamRegisterResponse.token;
   shubhamUser = shubhamRegisterResponse.user;
   console.log(`Shubham Logged In! Token: ${shubhamToken.substring(0, 15)}... User ID: ${shubhamUser.id}\n`);
@@ -148,9 +160,7 @@ const runTest = async () => {
   const testerPhone = String(Math.floor(1000000000 + Math.random() * 9000000000));
   await request('/users/register/initiate', 'POST', {
     fullName: 'OTP Tester',
-    email: testEmail,
-    password: 'password123',
-    phoneNumber: testerPhone
+    email: testEmail
   });
   console.log('OTP Tester registration initiated (stored temporarily).');
 
@@ -162,9 +172,27 @@ const runTest = async () => {
     console.log('Login failed as expected for pending user:', err.message);
   }
 
-  // Verify OTP (completes registration and creates user in DB)
+  // Verify OTP
   await request(`/users/register/verify?email=${encodeURIComponent(testEmail)}&otp=123456`, 'POST');
-  console.log('OTP verified and user created in DB!');
+  console.log('OTP verified successfully!');
+
+  // Attempt login again - should still fail because user is not created yet
+  try {
+    await request('/users/login', 'POST', { email: testEmail, password: 'password123' });
+    throw new Error('Login succeeded for verified but uncreated user (FAILURE)');
+  } catch (err) {
+    console.log('Login failed as expected for verified but uncreated user:', err.message);
+  }
+
+  // Finalize signup
+  console.log('Finalizing signup with phone & password...');
+  const testerRegister = await request('/users/register', 'POST', {
+    fullName: 'OTP Tester',
+    email: testEmail,
+    password: 'password123',
+    phoneNumber: testerPhone
+  });
+  console.log('User created in DB! Token returned:', testerRegister.token.substring(0, 10) + '...');
 
   // Attempt login again - should succeed
   const testerLogin = await request('/users/login', 'POST', { email: testEmail, password: 'password123' });

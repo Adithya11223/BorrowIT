@@ -20,9 +20,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailService emailService;
-
-    private final java.util.Map<String, com.borrowx.backend.dto.PendingRegistration> pendingRegistrations = 
-            new java.util.concurrent.ConcurrentHashMap<>();
+    private final com.borrowx.backend.repository.OtpVerificationRepository otpVerificationRepository;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.borrowx.backend.repository.BorrowRequestRepository borrowRequestRepository;
@@ -43,6 +41,7 @@ public class UserService {
         notificationRepository.deleteAll();
         messageRepository.deleteAll();
         itemRepository.deleteAll();
+        otpVerificationRepository.deleteAll();
         userRepository.deleteAll();
         System.out.println("[ADMIN] Database reset completed.");
     }
@@ -50,11 +49,13 @@ public class UserService {
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
-                       EmailService emailService) {
+                       EmailService emailService,
+                       com.borrowx.backend.repository.OtpVerificationRepository otpVerificationRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.emailService = emailService;
+        this.otpVerificationRepository = otpVerificationRepository;
     }
 
     // Register User (Direct Database Creation, e.g. for social logins or backend scripts)
@@ -69,110 +70,170 @@ public class UserService {
     }
 
     // Initiate Registration (Check uniqueness, store temporarily, generate OTP, send email)
-    public com.borrowx.backend.dto.PendingRegistration initiateRegistration(User user) {
-        if (userRepository.existsByEmail(user.getEmail())) {
+    @org.springframework.transaction.annotation.Transactional
+    public void initiateRegistration(String fullName, String email) {
+        if (userRepository.existsByEmail(email)) {
             throw new BadRequestException("Email is already registered.");
         }
 
-        // Validate phone uniqueness
-        if (user.getPhoneNumber() != null && userRepository.existsByPhoneNumber(user.getPhoneNumber())) {
-            throw new BadRequestException("Phone number is already registered.");
-        }
-
-        String otp = String.format("%06d", new java.util.Random().nextInt(900000) + 100000);
-        if (user.getEmail().contains("test")) {
-            otp = "123456";
-        }
-
-        com.borrowx.backend.dto.PendingRegistration pending = new com.borrowx.backend.dto.PendingRegistration(
-                user.getFullName(),
-                user.getEmail(),
-                user.getPassword(), // Store raw password temporarily, hash when creating!
-                user.getPhoneNumber(),
-                otp,
-                java.time.LocalDateTime.now().plusMinutes(5) // 5-minute expiry
-        );
-
-        pendingRegistrations.put(user.getEmail(), pending);
-        System.out.println("[REGISTRATION INITIATE] OTP for " + user.getEmail() + " is: " + otp);
-
-        emailService.sendEmail(
-                user.getEmail(),
-                "Welcome to BorrowIT - Verify Your Account",
-                "Hello " + user.getFullName() + ",\n\n" +
-                "Thank you for registering on BorrowIT! To complete your registration, please enter the following 6-digit verification code:\n\n" +
-                "Verification Code: " + otp + "\n\n" +
-                "This code will expire in 5 minutes.\n\n" +
-                "Happy borrowing!\n" +
-                "The BorrowIT Team"
-        );
-
-        return pending;
-    }
-
-    // Resend Registration OTP
-    public String resendRegistrationOtp(String email) {
-        com.borrowx.backend.dto.PendingRegistration pending = pendingRegistrations.get(email);
-        if (pending == null) {
-            throw new BadRequestException("No pending registration found for this email. Please sign up again.");
-        }
-
-        String otp = String.format("%06d", new java.util.Random().nextInt(900000) + 100000);
+        // Generate secure random 6-digit OTP
+        String otp = String.format("%06d", new java.security.SecureRandom().nextInt(900000) + 100000);
         if (email.contains("test")) {
             otp = "123456";
         }
 
-        pending.setOtp(otp);
-        pending.setExpiryTime(java.time.LocalDateTime.now().plusMinutes(5));
-        pendingRegistrations.put(email, pending);
+        // Delete existing OTP session for this email
+        otpVerificationRepository.findByEmail(email).ifPresent(otpVerificationRepository::delete);
 
-        System.out.println("[REGISTRATION RESEND] Generated new OTP for " + email + " is: " + otp);
+        com.borrowx.backend.entity.OtpVerification verification = new com.borrowx.backend.entity.OtpVerification();
+        verification.setEmail(email);
+        verification.setOtp(otp);
+        verification.setFullName(fullName);
+        verification.setExpiryTime(java.time.LocalDateTime.now().plusMinutes(5));
+        verification.setAttempts(0);
+        verification.setVerified(false);
 
-        emailService.sendEmail(
-                email,
-                "Welcome to BorrowIT - Verify Your Account",
-                "Hello " + pending.getFullName() + ",\n\n" +
-                "Your new verification code is: " + otp + "\n\n" +
-                "This code will expire in 5 minutes.\n\n" +
-                "Happy borrowing!\n" +
-                "The BorrowIT Team"
+        otpVerificationRepository.save(verification);
+
+        // Build HTML template
+        String emailHtml = String.format(
+            "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>" +
+            "body { margin: 0; padding: 0; background-color: #0f172a; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }" +
+            ".container { max-width: 550px; margin: 30px auto; background-color: #1e293b; border-radius: 16px; overflow: hidden; border: 1px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }" +
+            ".header { background-color: #ff5e00; padding: 25px; text-align: center; }" +
+            ".header h1 { margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: 1px; }" +
+            ".content { padding: 40px 35px; color: #f1f5f9; line-height: 1.6; }" +
+            ".content h2 { margin-top: 0; color: #ffffff; font-size: 20px; font-weight: 700; }" +
+            ".otp-card { background-color: #0f172a; border-radius: 12px; padding: 20px; text-align: center; margin: 30px 0; border: 1px solid #334155; }" +
+            ".otp-code { font-size: 32px; font-weight: 800; color: #ff5e00; letter-spacing: 6px; font-family: monospace; }" +
+            ".footer { background-color: #0f172a; padding: 20px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #334155; }" +
+            "</style></head><body><div class=\"container\"><div class=\"header\"><h1>BorrowIt</h1></div>" +
+            "<div class=\"content\"><h2>Hello %s,</h2><p>Welcome to <strong>BorrowIt</strong>!</p>" +
+            "<p>Your verification code is:</p><div class=\"otp-card\"><div class=\"otp-code\">%s</div></div>" +
+            "<p style=\"font-size: 13px; color: #94a3b8;\">This OTP is valid for <strong>5 minutes</strong>.</p>" +
+            "<p style=\"font-size: 12px; color: #64748b; margin-top: 30px; border-top: 1px solid #334155; padding-top: 15px;\">" +
+            "If you did not request this verification, please ignore this email.</p></div>" +
+            "<div class=\"footer\">Regards,<br><strong>BorrowIt Team</strong></div></div></body></html>",
+            escapeHtml(fullName),
+            otp
         );
 
-        return otp;
+        emailService.sendEmail(email, "BorrowIt Email Verification", emailHtml);
     }
 
-    // Complete Registration (Verify OTP, Create user in DB, Generate JWT)
-    public LoginResponseDTO completeRegistration(String email, String otp) {
-        com.borrowx.backend.dto.PendingRegistration pending = pendingRegistrations.get(email);
-        if (pending == null) {
-            throw new BadRequestException("No pending registration found for this email. Please register again.");
+    // Resend Registration OTP
+    @org.springframework.transaction.annotation.Transactional
+    public void resendRegistrationOtp(String email) {
+        com.borrowx.backend.entity.OtpVerification verification = otpVerificationRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("No pending verification found for this email. Please initiate registration first."));
+
+        // Generate secure random 6-digit OTP
+        String otp = String.format("%06d", new java.security.SecureRandom().nextInt(900000) + 100000);
+        if (email.contains("test")) {
+            otp = "123456";
         }
 
-        if (pending.getExpiryTime().isBefore(java.time.LocalDateTime.now())) {
-            pendingRegistrations.remove(email);
-            throw new BadRequestException("Verification code has expired. Please register again.");
+        verification.setOtp(otp);
+        verification.setExpiryTime(java.time.LocalDateTime.now().plusMinutes(5));
+        verification.setAttempts(0);
+        verification.setVerified(false);
+
+        otpVerificationRepository.save(verification);
+
+        // Send HTML email
+        String emailHtml = String.format(
+            "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>" +
+            "body { margin: 0; padding: 0; background-color: #0f172a; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }" +
+            ".container { max-width: 550px; margin: 30px auto; background-color: #1e293b; border-radius: 16px; overflow: hidden; border: 1px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }" +
+            ".header { background-color: #ff5e00; padding: 25px; text-align: center; }" +
+            ".header h1 { margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: 1px; }" +
+            ".content { padding: 40px 35px; color: #f1f5f9; line-height: 1.6; }" +
+            ".content h2 { margin-top: 0; color: #ffffff; font-size: 20px; font-weight: 700; }" +
+            ".otp-card { background-color: #0f172a; border-radius: 12px; padding: 20px; text-align: center; margin: 30px 0; border: 1px solid #334155; }" +
+            ".otp-code { font-size: 32px; font-weight: 800; color: #ff5e00; letter-spacing: 6px; font-family: monospace; }" +
+            ".footer { background-color: #0f172a; padding: 20px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #334155; }" +
+            "</style></head><body><div class=\"container\"><div class=\"header\"><h1>BorrowIt</h1></div>" +
+            "<div class=\"content\"><h2>Hello %s,</h2><p>Welcome to <strong>BorrowIt</strong>!</p>" +
+            "<p>Your verification code is:</p><div class=\"otp-card\"><div class=\"otp-code\">%s</div></div>" +
+            "<p style=\"font-size: 13px; color: #94a3b8;\">This OTP is valid for <strong>5 minutes</strong>.</p>" +
+            "<p style=\"font-size: 12px; color: #64748b; margin-top: 30px; border-top: 1px solid #334155; padding-top: 15px;\">" +
+            "If you did not request this verification, please ignore this email.</p></div>" +
+            "<div class=\"footer\">Regards,<br><strong>BorrowIt Team</strong></div></div></body></html>",
+            escapeHtml(verification.getFullName()),
+            otp
+        );
+
+        emailService.sendEmail(email, "BorrowIt Email Verification", emailHtml);
+    }
+
+    // Verify OTP
+    @org.springframework.transaction.annotation.Transactional
+    public void verifyRegistrationOtp(String email, String otp) {
+        com.borrowx.backend.entity.OtpVerification verification = otpVerificationRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("No pending verification found for this email."));
+
+        if (verification.getExpiryTime().isBefore(java.time.LocalDateTime.now())) {
+            otpVerificationRepository.delete(verification);
+            throw new BadRequestException("Verification code has expired. Please request a new OTP.");
         }
 
-        if (!pending.getOtp().equals(otp)) {
+        if (verification.getAttempts() >= 5) {
+            otpVerificationRepository.delete(verification);
+            throw new BadRequestException("Too many verification attempts. Please request a new OTP.");
+        }
+
+        verification.setAttempts(verification.getAttempts() + 1);
+
+        if (!verification.getOtp().equals(otp)) {
+            otpVerificationRepository.save(verification);
             throw new BadRequestException("Invalid verification code.");
         }
 
-        // Create user in DB
-        User user = new User();
-        user.setFullName(pending.getFullName());
-        user.setEmail(pending.getEmail());
-        user.setPassword(passwordEncoder.encode(pending.getPassword()));
-        user.setPhoneNumber(pending.getPhoneNumber());
+        verification.setVerified(true);
+        otpVerificationRepository.save(verification);
+    }
+
+    // Complete Registration
+    @org.springframework.transaction.annotation.Transactional
+    public LoginResponseDTO completeRegistration(User user) {
+        com.borrowx.backend.entity.OtpVerification verification = otpVerificationRepository.findByEmail(user.getEmail())
+                .orElseThrow(() -> new BadRequestException("Email verification is required before registration."));
+
+        if (!Boolean.TRUE.equals(verification.getVerified())) {
+            throw new BadRequestException("Email verification is required before registration.");
+        }
+
+        if (userRepository.existsByEmail(user.getEmail())) {
+            throw new BadRequestException("Email is already registered.");
+        }
+
+        if (userRepository.existsByPhoneNumber(user.getPhoneNumber())) {
+            throw new BadRequestException("Phone number is already registered.");
+        }
+
+        // Hash password
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setTrustScore(50.0);
-        user.setVerified(true); // Account is verified upon successful OTP match
+        user.setVerified(true);
 
         User savedUser = userRepository.save(user);
-        pendingRegistrations.remove(email);
 
-        // Generate JWT
+        // Delete OTP verification record
+        otpVerificationRepository.delete(verification);
+
+        // Generate JWT token
         String token = jwtService.generateToken(savedUser.getEmail());
 
         return new LoginResponseDTO(token, convertToDTO(savedUser));
+    }
+
+    private String escapeHtml(String input) {
+        if (input == null) return "";
+        return input.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\"", "&quot;")
+                    .replace("'", "&#x27;");
     }
 
     // Login
@@ -193,58 +254,6 @@ public class UserService {
         String token = jwtService.generateToken(user.getEmail());
 
         return new LoginResponseDTO(token, convertToDTO(user));
-    }
-
-    // Verify OTP
-    public void verifyOtp(String email, String otp) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        if (Boolean.TRUE.equals(user.getVerified())) {
-            return; // Already verified
-        }
-
-        if (user.getVerificationOtp() == null || !user.getVerificationOtp().equals(otp)) {
-            throw new BadRequestException("Invalid verification code.");
-        }
-
-        if (user.getOtpExpiry() == null || user.getOtpExpiry().isBefore(java.time.LocalDateTime.now())) {
-            throw new BadRequestException("Verification code has expired. Please request a new one.");
-        }
-
-        user.setVerified(true);
-        user.setVerificationOtp(null);
-        user.setOtpExpiry(null);
-        userRepository.save(user);
-    }
-
-    // Resend OTP
-    public String resendOtp(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        if (Boolean.TRUE.equals(user.getVerified())) {
-            throw new BadRequestException("Account is already verified.");
-        }
-
-        String otp = String.format("%06d", new java.util.Random().nextInt(900000) + 100000);
-        user.setVerificationOtp(otp);
-        user.setOtpExpiry(java.time.LocalDateTime.now().plusMinutes(15));
-        userRepository.save(user);
-
-        System.out.println("[RESEND OTP] Generated new OTP for " + user.getEmail() + " is: " + otp);
-
-        emailService.sendEmail(
-                user.getEmail(),
-                "BorrowIT Verification Code",
-                "Hello " + user.getFullName() + ",\n\n" +
-                "Your new verification code is: " + otp + "\n\n" +
-                "This code will expire in 15 minutes.\n\n" +
-                "Happy borrowing!\n" +
-                "The BorrowIT Team"
-        );
-
-        return otp;
     }
 
     // Get All Users

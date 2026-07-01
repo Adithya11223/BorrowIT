@@ -10,18 +10,21 @@ import * as Icons from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Register() {
-  const { login, socialLogin, completeSignupSession, addToast } = useApp();
+  const { socialLogin, completeSignupSession, addToast } = useApp();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // OTP Verification steps state
   const [otpStep, setOtpStep] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [resending, setResending] = useState(false);
 
@@ -33,29 +36,27 @@ export default function Register() {
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  const handleSubmit = async (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!fullName || !email || !password) {
-      setError("Please fill in all fields");
+    if (!fullName || !email) {
+      setError("Please fill in your name and email.");
       return;
     }
     try {
       setLoading(true);
       setError('');
-      
-      // Step 1: Initiate creation on backend (checks uniqueness, stores temporarily, sends OTP)
-      await api.initiateRegistration(fullName, email, password);
-
+      await api.initiateRegistration(fullName, email);
       setOtpStep(true);
-      addToast('Verification Sent', 'Please check your email inbox for the 6-digit OTP code.', 'info');
+      setCooldown(30);
+      addToast('Verification Sent', 'Verification code has been sent to your email.', 'info');
     } catch (err) {
-      setError(`${err.message || 'Registration failed'} (Endpoint: ${BASE_URL}/users/register/initiate)`);
+      setError(err.message || 'Failed to send verification code.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerifySubmit = async (e) => {
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
     if (!otpCode || otpCode.length !== 6) {
       setError('Please enter a valid 6-digit verification code.');
@@ -64,15 +65,43 @@ export default function Register() {
     try {
       setLoading(true);
       setError('');
+      await api.verifyRegistrationOtp(email, otpCode);
+      setEmailVerified(true);
+      addToast('Email Verified', 'Email verification complete. Please fill in details.', 'success');
+    } catch (err) {
+      setError(err.message || 'Invalid verification code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateAccount = async (e) => {
+    e.preventDefault();
+    if (!phoneNumber || !password || !confirmPassword) {
+      setError('Please fill in all fields.');
+      return;
+    }
+    if (phoneNumber.length !== 10) {
+      setError('Phone number must contain exactly 10 digits.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    try {
+      setLoading(true);
+      setError('');
       
-      // Step 2: Validate OTP code & get JWT directly
-      const data = await api.verifyRegistrationOtp(email, otpCode);
+      // Step 4: Finalize sign up and return user session response
+      const data = await api.register(fullName, email, password, phoneNumber);
       
-      // Store session and login
+      // Log the user in
       await completeSignupSession(data.token, data.user);
+      addToast('Registration Successful', 'Welcome to BorrowIt!', 'success');
       navigate('/');
     } catch (err) {
-      setError(`${err.message || 'Verification failed'} (Endpoint: ${BASE_URL}/users/register/verify)`);
+      setError(err.message || 'Registration failed.');
     } finally {
       setLoading(false);
     }
@@ -125,24 +154,16 @@ export default function Register() {
           {/* Heading */}
           <div>
             <h2 className="text-2xl font-black text-white">
-              {otpStep ? 'Verify Your Email' : 'Join BorrowIT'}
+              {emailVerified ? 'Complete Registration' : (otpStep ? 'Verify Your Email' : 'Join BorrowIT')}
             </h2>
             <p className="text-xs text-slate-400 mt-1 font-medium">
-              {otpStep 
-                ? `We've sent a 6-digit verification code to ${email}`
-                : 'Create an account to start sharing and borrowing today.'}
+              {emailVerified 
+                ? 'Fill in the remaining details to create your account.' 
+                : (otpStep 
+                  ? `We've sent a 6-digit verification code to ${email}`
+                  : 'Create an account to start sharing and borrowing today.')}
             </p>
           </div>
-
-          {/* Verification Tip */}
-          {otpStep && (
-            <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-xl p-3 text-[10px] text-slate-300 flex items-start gap-2.5 font-medium leading-relaxed">
-              <Icons.Info className="w-4 h-4 text-brand-primary shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold text-white">Verification Tip:</span> If you haven't configured SMTP email, check the Render backend console logs to read your 6-digit OTP code.
-              </div>
-            </div>
-          )}
 
           {/* Error Message */}
           {error && (
@@ -156,7 +177,7 @@ export default function Register() {
           )}
 
           {/* Forms Section */}
-          <form onSubmit={otpStep ? handleVerifySubmit : handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={emailVerified ? handleCreateAccount : (otpStep ? handleVerifyOtp : handleSendOtp)} className="flex flex-col gap-4">
             {/* Full Name Input */}
             <div className="flex flex-col gap-1.5">
               <div className="relative">
@@ -193,60 +214,29 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Password Input */}
-            <div className="flex flex-col gap-1.5">
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                  <Icons.Lock className="w-4 h-4" />
-                </span>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Create a password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  required
-                  disabled={loading || otpStep}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-white"
-                  disabled={loading || otpStep}
-                >
-                  {showPassword ? <Icons.EyeOff className="w-4 h-4" /> : <Icons.Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Terms and Conditions Text */}
-            <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-              By signing up, you agree to our <span className="text-white hover:underline cursor-pointer">Terms of Service</span> and neighborhood code of conduct.
-            </p>
-
-            {/* Send OTP Button (Only visible if !otpStep) */}
+            {/* Step 1 Send OTP Button (Only visible if !otpStep) */}
             {!otpStep && (
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full bg-brand-primary hover:bg-[#E05300] text-black font-extrabold py-3.5 rounded-xl text-xs transition-all duration-200 mt-2 shadow-lg shadow-brand-primary/10 select-none active:scale-95 disabled:opacity-50"
               >
-                {loading ? 'Sending Code...' : 'Send Verification OTP'}
+                {loading ? 'Processing...' : 'Send OTP'}
               </button>
             )}
 
-            {/* Verification Section (Only visible if otpStep) */}
-            {otpStep && (
+            {/* Step 2 & 3: OTP Verification Input & Button (Only visible if otpStep && !emailVerified) */}
+            {otpStep && !emailVerified && (
               <div className="flex flex-col gap-4 mt-2 border-t border-[#2A2A2D] pt-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400">Enter Verification OTP</label>
+                  <label className="text-[10px] font-bold text-slate-400">Enter 6-Digit Code</label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
                       <Icons.Key className="w-4 h-4" />
                     </span>
                     <input
                       type="text"
-                      placeholder="6-digit code"
+                      placeholder="XXXXXX"
                       maxLength={6}
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
@@ -257,16 +247,14 @@ export default function Register() {
                   </div>
                 </div>
 
-                {/* Main Sign Up / Complete Registration Button */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-brand-primary hover:bg-[#E05300] text-black font-extrabold py-3.5 rounded-xl text-xs transition-all duration-200 shadow-lg shadow-brand-primary/10 select-none active:scale-95 disabled:opacity-50"
+                  className="w-full bg-brand-primary hover:bg-[#E05300] text-black font-extrabold py-3.5 rounded-xl text-xs transition-all duration-200 shadow-lg shadow-brand-primary/10 select-none active:scale-95"
                 >
-                  {loading ? 'Registering...' : 'Sign Up & Verify'}
+                  {loading ? 'Verifying...' : 'Verify OTP'}
                 </button>
 
-                {/* Actions & Resend OTP */}
                 <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
                   <button
                     type="button"
@@ -288,6 +276,90 @@ export default function Register() {
                     {cooldown > 0 ? `Resend Code (${cooldown}s)` : resending ? 'Resending...' : 'Resend Code'}
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* Success Badge "Email Verified ✓" */}
+            {emailVerified && (
+              <div className="flex items-center gap-2 text-green-400 bg-green-500/10 border border-green-500/20 py-2.5 px-4 rounded-xl text-xs font-bold justify-center mt-2">
+                <Icons.CheckCircle2 className="w-4 h-4" /> Email Verified ✓
+              </div>
+            )}
+
+            {/* Step 4: Final Account Details Section (Only visible if emailVerified) */}
+            {emailVerified && (
+              <div className="flex flex-col gap-4 mt-2 border-t border-[#2A2A2D] pt-4">
+                {/* Phone Number Input */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                      <Icons.Phone className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Enter phone number (10 digits)"
+                      maxLength={10}
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                      className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                {/* Password Input */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                      <Icons.Lock className="w-4 h-4" />
+                    </span>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Create a password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                      required
+                      disabled={loading}
+                    />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-white"
+                        disabled={loading}
+                      >
+                        {showPassword ? <Icons.EyeOff className="w-4 h-4" /> : <Icons.Eye className="w-4 h-4" />}
+                      </button>
+                  </div>
+                </div>
+
+                {/* Confirm Password Input */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                      <Icons.Lock className="w-4 h-4" />
+                    </span>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Confirm password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                {/* Final Create Account Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-brand-primary hover:bg-[#E05300] text-black font-extrabold py-3.5 rounded-xl text-xs transition-all duration-200 mt-2 shadow-lg shadow-brand-primary/10 select-none active:scale-95"
+                >
+                  {loading ? 'Creating Account...' : 'Create Account'}
+                </button>
               </div>
             )}
           </form>

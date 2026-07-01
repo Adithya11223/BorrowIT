@@ -39,25 +39,23 @@ export const api = {
   },
 
   register: async (fullName, email, password, phoneNumber) => {
-    const finalPhone = phoneNumber || String(Math.floor(1000000000 + Math.random() * 9000000000));
     const res = await fetch(`${BASE_URL}/users/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fullName, email, password, phoneNumber: finalPhone })
+      body: JSON.stringify({ fullName, email, password, phoneNumber })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: 'Registration failed' }));
       throw new Error(err.message || 'Registration failed');
     }
-    return api.login(email, password);
+    return res.json();
   },
 
-  initiateRegistration: async (fullName, email, password, phoneNumber) => {
-    const finalPhone = phoneNumber || String(Math.floor(1000000000 + Math.random() * 9000000000));
+  initiateRegistration: async (fullName, email) => {
     const res = await fetch(`${BASE_URL}/users/register/initiate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fullName, email, password, phoneNumber: finalPhone })
+      body: JSON.stringify({ fullName, email })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: 'Failed to initiate registration' }));
@@ -98,28 +96,6 @@ export const api = {
     } catch {
       return await api.register(fullName, email, password, phoneNumber);
     }
-  },
-
-  verifyOtp: async (email, otp) => {
-    const res = await fetch(`${BASE_URL}/users/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`, {
-      method: 'POST'
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: 'Invalid verification code' }));
-      throw new Error(err.message || 'Verification failed');
-    }
-    return res.json();
-  },
-
-  resendOtp: async (email) => {
-    const res = await fetch(`${BASE_URL}/users/resend-otp?email=${encodeURIComponent(email)}`, {
-      method: 'POST'
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: 'Failed to resend OTP' }));
-      throw new Error(err.message || 'Failed to resend code');
-    }
-    return res.json();
   },
 
   editProfile: async (userId, fullName, email, phoneNumber) => {
