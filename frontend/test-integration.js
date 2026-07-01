@@ -25,13 +25,14 @@ const runTest = async () => {
   let adithyaToken;
   let adithyaUser;
   const adithyaEmail = `test-adithya-${Date.now()}@example.com`;
+  const adithyaPhone = String(Math.floor(1000000000 + Math.random() * 9000000000));
   
   console.log(`Initiating registration for Adithya (${adithyaEmail})...`);
   await request('/users/register/initiate', 'POST', {
     fullName: 'Adithya Verma',
     email: adithyaEmail,
     password: 'password123',
-    phoneNumber: '7075547800'
+    phoneNumber: adithyaPhone
   });
 
   console.log('Verifying registration OTP for Adithya...');
@@ -61,13 +62,14 @@ const runTest = async () => {
   let shubhamToken;
   let shubhamUser;
   const shubhamEmail = `test-shubham-${Date.now()}@example.com`;
+  const shubhamPhone = String(Math.floor(1000000000 + Math.random() * 9000000000));
   
   console.log(`Initiating registration for Shubham (${shubhamEmail})...`);
   await request('/users/register/initiate', 'POST', {
     fullName: 'Shubham Kumar',
     email: shubhamEmail,
     password: 'password123',
-    phoneNumber: '9876543210'
+    phoneNumber: shubhamPhone
   });
 
   console.log('Verifying registration OTP for Shubham...');
@@ -143,11 +145,12 @@ const runTest = async () => {
   const testEmail = `tester-profile-${Date.now()}@example.com`;
   
   // Initiate registration
+  const testerPhone = String(Math.floor(1000000000 + Math.random() * 9000000000));
   await request('/users/register/initiate', 'POST', {
     fullName: 'OTP Tester',
     email: testEmail,
     password: 'password123',
-    phoneNumber: '9000000000'
+    phoneNumber: testerPhone
   });
   console.log('OTP Tester registration initiated (stored temporarily).');
 
