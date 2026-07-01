@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { api } from '../services/api';
+import { api, BASE_URL } from '../services/api';
 import Logo from '../components/Logo';
 import AuthAnimation from '../components/AuthAnimation';
 import * as Icons from 'lucide-react';
@@ -54,7 +54,7 @@ export default function Register() {
         addToast('Verification Sent', 'Please check your email/logs for the 6-digit OTP code.', 'info');
       }
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      setError(`${err.message || 'Registration failed'} (Endpoint: ${BASE_URL}/users/register/initiate)`);
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ export default function Register() {
       await completeSignupSession(data.token, data.user);
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Verification failed. Please try again.');
+      setError(`${err.message || 'Verification failed'} (Endpoint: ${BASE_URL}/users/register/verify)`);
     } finally {
       setLoading(false);
     }

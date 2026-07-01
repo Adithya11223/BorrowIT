@@ -37,7 +37,7 @@ export default function MyItems() {
 
   return (
     <div className="flex flex-col gap-6">
-      
+
       {/* Header Panel */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -61,9 +61,8 @@ export default function MyItems() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`pb-3 text-xs font-bold uppercase tracking-wider transition-colors whitespace-nowrap relative ${
-              activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:text-white'
-            }`}
+            className={`pb-3 text-xs font-bold uppercase tracking-wider transition-colors whitespace-nowrap relative ${activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:text-white'
+              }`}
           >
             {tab.label}
             {activeTab === tab.id && (
@@ -142,9 +141,9 @@ export default function MyItems() {
                             <Icons.Edit className="w-4 h-4" />
                           </button>
                         </Link>
-                        <button 
+                        <button
                           onClick={() => handleDeleteTrigger(item.id)}
-                          className="p-2 text-slate-500 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors" 
+                          className="p-2 text-slate-500 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
                           title="Delete Listing"
                         >
                           <Icons.Trash className="w-4 h-4" />
@@ -162,12 +161,12 @@ export default function MyItems() {
           icon="PackageOpen"
           title="No items found"
           description={
-            activeTab === 'all' 
-              ? "You haven't listed any items for sharing yet. Start sharing to build your trust score!" 
+            activeTab === 'all'
+              ? "You haven't listed any items for sharing yet. Start sharing to build your trust score!"
               : "No items match the selected tab filter."
           }
           actionLabel={activeTab === 'all' ? "List your first item" : undefined}
-          onAction={activeTab === 'all' ? () => {} : undefined}
+          onAction={activeTab === 'all' ? () => { } : undefined}
         />
       )}
 
