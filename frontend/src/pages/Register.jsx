@@ -15,6 +15,7 @@ export default function Register() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,8 +36,12 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!fullName || !email || !password) {
+    if (!fullName || !email || !password || !phoneNumber) {
       setError("Please fill in all fields");
+      return;
+    }
+    if (phoneNumber.length !== 10) {
+      setError("Phone number must contain exactly 10 digits");
       return;
     }
     try {
@@ -44,7 +49,7 @@ export default function Register() {
       setError('');
       
       // Step 1: Initiate creation on backend (checks uniqueness, stores temporarily, sends OTP)
-      const res = await api.initiateRegistration(fullName, email, password);
+      const res = await api.initiateRegistration(fullName, email, password, phoneNumber);
 
       setOtpStep(true);
       if (res && res.verificationOtp) {
@@ -197,6 +202,25 @@ export default function Register() {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              {/* Phone Number Input */}
+              <div className="flex flex-col gap-1.5">
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                    <Icons.Phone className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Enter 10-digit phone number"
+                    maxLength={10}
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
                     className="w-full bg-[#131314] border border-[#2A2A2D] focus:border-brand-primary rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
                     required
                     disabled={loading}
