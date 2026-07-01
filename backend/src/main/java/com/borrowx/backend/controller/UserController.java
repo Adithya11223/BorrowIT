@@ -55,6 +55,13 @@ public class UserController {
         return userService.completeRegistration(email, otp);
     }
 
+    // Reset Database (Wipes all tables)
+    @PostMapping("/reset-db")
+    public org.springframework.http.ResponseEntity<?> resetDatabase() {
+        userService.resetDatabase();
+        return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Database successfully reset and cleared."));
+    }
+
     // Login User
     @PostMapping("/login")
     public LoginResponseDTO login(@RequestBody LoginRequestDTO loginRequest) {

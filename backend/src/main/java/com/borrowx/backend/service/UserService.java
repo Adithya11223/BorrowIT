@@ -24,6 +24,29 @@ public class UserService {
     private final java.util.Map<String, com.borrowx.backend.dto.PendingRegistration> pendingRegistrations = 
             new java.util.concurrent.ConcurrentHashMap<>();
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.borrowx.backend.repository.BorrowRequestRepository borrowRequestRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.borrowx.backend.repository.ReviewRepository reviewRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.borrowx.backend.repository.NotificationRepository notificationRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.borrowx.backend.repository.MessageRepository messageRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.borrowx.backend.repository.ItemRepository itemRepository;
+
+    // Reset Database
+    @org.springframework.transaction.annotation.Transactional
+    public void resetDatabase() {
+        borrowRequestRepository.deleteAll();
+        reviewRepository.deleteAll();
+        notificationRepository.deleteAll();
+        messageRepository.deleteAll();
+        itemRepository.deleteAll();
+        userRepository.deleteAll();
+        System.out.println("[ADMIN] Database reset completed.");
+    }
+
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,

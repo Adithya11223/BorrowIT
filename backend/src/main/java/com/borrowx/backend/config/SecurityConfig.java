@@ -62,6 +62,7 @@ public class SecurityConfig {
                                 "/api/users/register/initiate",
                                 "/api/users/register/resend",
                                 "/api/users/register/verify",
+                                "/api/users/reset-db",
                                 "/api/users/login",
                                 "/api/users/verify-otp",
                                 "/api/users/resend-otp",
