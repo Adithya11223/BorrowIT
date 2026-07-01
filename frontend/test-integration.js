@@ -24,20 +24,29 @@ const runTest = async () => {
   console.log('1. Registering/Logging in Adithya...');
   let adithyaToken;
   let adithyaUser;
+  const adithyaEmail = 'test-adithya@example.com';
   try {
     await request('/users/register', 'POST', {
       fullName: 'Adithya Verma',
-      email: 'adithya@example.com',
+      email: adithyaEmail,
       password: 'password123',
       phoneNumber: '7075547800'
     });
     console.log('Adithya registered successfully!');
   } catch (err) {
-    console.log('Adithya already registered, logging in...');
+    console.log('Adithya already registered.');
+  }
+
+  // Verify OTP for Adithya
+  try {
+    await request(`/users/verify-otp?email=${encodeURIComponent(adithyaEmail)}&otp=123456`, 'POST');
+    console.log('Adithya OTP verified successfully!');
+  } catch (err) {
+    console.log('Adithya already verified.');
   }
   
   const loginAdithya = await request('/users/login', 'POST', {
-    email: 'adithya@example.com',
+    email: adithyaEmail,
     password: 'password123'
   });
   adithyaToken = loginAdithya.token;
@@ -64,20 +73,29 @@ const runTest = async () => {
   console.log('3. Registering/Logging in Shubham...');
   let shubhamToken;
   let shubhamUser;
+  const shubhamEmail = 'test-shubham@example.com';
   try {
     await request('/users/register', 'POST', {
       fullName: 'Shubham Kumar',
-      email: 'shubham@example.com',
+      email: shubhamEmail,
       password: 'password123',
       phoneNumber: '9876543210'
     });
     console.log('Shubham registered successfully!');
   } catch (err) {
-    console.log('Shubham already registered, logging in...');
+    console.log('Shubham already registered.');
+  }
+
+  // Verify OTP for Shubham
+  try {
+    await request(`/users/verify-otp?email=${encodeURIComponent(shubhamEmail)}&otp=123456`, 'POST');
+    console.log('Shubham OTP verified successfully!');
+  } catch (err) {
+    console.log('Shubham already verified.');
   }
   
   const loginShubham = await request('/users/login', 'POST', {
-    email: 'shubham@example.com',
+    email: shubhamEmail,
     password: 'password123'
   });
   shubhamToken = loginShubham.token;
