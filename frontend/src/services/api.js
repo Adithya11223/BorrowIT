@@ -1,6 +1,6 @@
 // api.js - Production connection service layer mapping frontend requests to Spring Boot / PostgreSQL endpoints
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:1026/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://borrowit-backend-ym6x.onrender.com/api';
 
 const getHeaders = () => {
   const token = localStorage.getItem('borrowit_token');
