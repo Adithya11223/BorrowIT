@@ -78,7 +78,10 @@ public class UserController {
     @PostMapping("/resend-otp")
     public org.springframework.http.ResponseEntity<?> resendOtp(
             @RequestParam String email) {
-        userService.resendOtp(email);
-        return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Verification code resent"));
+        String otp = userService.resendOtp(email);
+        return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                "message", "Verification code resent",
+                "verificationOtp", otp
+        ));
     }
 }

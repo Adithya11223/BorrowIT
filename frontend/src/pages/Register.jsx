@@ -44,7 +44,7 @@ export default function Register() {
       setError('');
       
       // Step 1: Create user on the backend
-      await api.registerOnly(fullName, email, password);
+      const user = await api.registerOnly(fullName, email, password);
 
       // Check if user is pre-verified (e.g. social auth mockup or admin profile override)
       if (email.endsWith('.user@example.com') || email === 'adithya@example.com' || email === 'shubham@example.com') {
@@ -52,7 +52,12 @@ export default function Register() {
         navigate('/');
       } else {
         setOtpStep(true);
-        addToast('Verification Sent', 'Please check your email/logs for the 6-digit OTP code.', 'info');
+        if (user && user.verificationOtp) {
+          addToast('Verification Code Generated', `SMTP not set up on Render. Code: ${user.verificationOtp}`, 'success');
+          setOtpCode(user.verificationOtp);
+        } else {
+          addToast('Verification Sent', 'Please check your email/logs for the 6-digit OTP code.', 'info');
+        }
       }
     } catch (err) {
       if (err.message && err.message.includes('not verified')) {

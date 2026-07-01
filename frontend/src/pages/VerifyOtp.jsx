@@ -56,8 +56,13 @@ export default function VerifyOtp() {
     try {
       setResending(true);
       setError('');
-      await api.resendOtp(email);
-      addToast('Code Resent', 'A new verification code has been dispatched.', 'success');
+      const res = await api.resendOtp(email);
+      if (res && res.verificationOtp) {
+        addToast('Verification Code Resent', `SMTP not set up. Code: ${res.verificationOtp}`, 'success');
+        setOtp(res.verificationOtp);
+      } else {
+        addToast('Code Resent', 'A new verification code has been dispatched.', 'success');
+      }
       setCooldown(30); // 30s cooldown
     } catch (err) {
       setError(err.message || 'Failed to resend code');

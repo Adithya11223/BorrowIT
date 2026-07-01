@@ -115,7 +115,7 @@ public class UserService {
     }
 
     // Resend OTP
-    public void resendOtp(String email) {
+    public String resendOtp(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -139,6 +139,8 @@ public class UserService {
                 "Happy borrowing!\n" +
                 "The BorrowIT Team"
         );
+
+        return otp;
     }
 
     // Get All Users
@@ -198,7 +200,8 @@ public class UserService {
                 user.getEmail(),
                 user.getPhoneNumber(),
                 user.getTrustScore(),
-                user.getVerified()
+                user.getVerified(),
+                user.getVerificationOtp()
         );
     }
 }
