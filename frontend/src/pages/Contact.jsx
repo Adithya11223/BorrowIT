@@ -93,7 +93,7 @@ export default function Contact() {
             </div>
             <div>
               <h4 className="text-xs font-bold text-white uppercase tracking-wider">Email Address</h4>
-              <p className="text-xs text-brand-primary font-bold mt-1">adithya7075547800@gmail.com</p>
+              <p className="text-xs text-brand-primary font-bold mt-1">adithya70755@gmail.com</p>
               <p className="text-[10px] text-slate-500 mt-0.5">Replies within 24 hours</p>
             </div>
           </Card>

@@ -1,9 +1,17 @@
-// AppContext.jsx - Global Application State Provider linking BorrowIT frontend views to api.js network requester
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { api } from '../services/api';
+import { mockServices } from '../services/mockServices';
 
 const AppContext = createContext();
+
+const isNetworkError = (err) => {
+  return err && err.message && (
+    err.message.toLowerCase().includes('failed to fetch') || 
+    err.message.toLowerCase().includes('networkerror') || 
+    err.message.toLowerCase().includes('cors') ||
+    err.message.toLowerCase().includes('typeerror')
+  );
+};
 
 export const AppProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -32,6 +40,11 @@ export const AppProvider = ({ children }) => {
             setRequests(userReqs);
           } catch (err) {
             console.error("Requests fetch error:", err);
+            if (isNetworkError(err)) {
+              console.log("Loading mock requests");
+              const userReqs = await mockServices.fetchBorrowRequests();
+              setRequests(userReqs);
+            }
           }
         }
 
@@ -41,6 +54,11 @@ export const AppProvider = ({ children }) => {
           setItems(initialItemsList);
         } catch (err) {
           console.error("Items load error:", err);
+          if (isNetworkError(err)) {
+            console.log("Loading mock items catalog");
+            const initialItemsList = await mockServices.fetchItems();
+            setItems(initialItemsList);
+          }
         }
 
         // Fetch user notifications
@@ -49,6 +67,11 @@ export const AppProvider = ({ children }) => {
           setNotifications(initialNotifs);
         } catch (err) {
           console.error("Notifications load error:", err);
+          if (isNetworkError(err)) {
+            console.log("Loading mock notifications");
+            const initialNotifs = await mockServices.fetchNotifications();
+            setNotifications(initialNotifs);
+          }
         }
 
         // Read wishlist from localStorage if exists
@@ -93,6 +116,18 @@ export const AppProvider = ({ children }) => {
       addToast('Success', `Welcome back, ${user.name}!`, 'success');
       return user;
     } catch (err) {
+      if (isNetworkError(err)) {
+        console.warn("Backend down, falling back to mock login");
+        const user = await mockServices.login(email, password);
+        setCurrentUser(user);
+        localStorage.setItem('borrowit_user', JSON.stringify(user));
+        
+        const userReqs = await mockServices.fetchBorrowRequests();
+        setRequests(userReqs);
+        
+        addToast('Demo Mode', `Logged in locally as ${user.name}`, 'success');
+        return user;
+      }
       addToast('Error', err.message, 'error');
       throw err;
     }
@@ -107,6 +142,15 @@ export const AppProvider = ({ children }) => {
       addToast('Success', `Account created! Welcome, ${fullName}`, 'success');
       return user;
     } catch (err) {
+      if (isNetworkError(err)) {
+        console.warn("Backend down, falling back to mock registration");
+        const user = await mockServices.register(fullName, email, password);
+        setCurrentUser(user);
+        localStorage.setItem('borrowit_user', JSON.stringify(user));
+        setRequests([]);
+        addToast('Demo Mode', `Account created locally for ${fullName}!`, 'success');
+        return user;
+      }
       addToast('Error', err.message, 'error');
       throw err;
     }
@@ -121,8 +165,13 @@ export const AppProvider = ({ children }) => {
       addToast('Success', `Logged in successfully via ${provider}!`, 'success');
       return user;
     } catch (err) {
-      addToast('Error', err.message, 'error');
-      throw err;
+      console.warn("Backend down, falling back to mock social login");
+      const user = await mockServices.socialAuth(provider);
+      setCurrentUser(user);
+      localStorage.setItem('borrowit_user', JSON.stringify(user));
+      setRequests([]);
+      addToast('Demo Mode', `Signed in locally via ${provider}!`, 'success');
+      return user;
     }
   };
 
@@ -142,6 +191,19 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('borrowit_user', JSON.stringify(updatedUser));
       addToast('Success', 'Profile updated successfully', 'success');
     } catch (err) {
+      if (isNetworkError(err)) {
+        console.warn("Backend down, updating profile locally");
+        const updatedUser = {
+          ...currentUser,
+          name: profileData.fullName,
+          email: profileData.email,
+          phone: profileData.phoneNumber
+        };
+        setCurrentUser(updatedUser);
+        localStorage.setItem('borrowit_user', JSON.stringify(updatedUser));
+        addToast('Success (Demo Mode)', 'Profile updated locally', 'success');
+        return;
+      }
       addToast('Error', err.message, 'error');
     }
   };
@@ -153,6 +215,12 @@ export const AppProvider = ({ children }) => {
       setItems(list);
       return list;
     } catch (err) {
+      if (isNetworkError(err)) {
+        console.warn("Backend down, loading mock items");
+        const list = await mockServices.fetchItems(params);
+        setItems(list);
+        return list;
+      }
       addToast('Error', 'Failed to load items', 'error');
     }
   };
@@ -165,6 +233,21 @@ export const AppProvider = ({ children }) => {
       addToast('Success', `Item "${itemData.title}" listed successfully!`, 'success');
       return newItem;
     } catch (err) {
+      if (isNetworkError(err)) {
+        console.warn("Backend down, creating item locally");
+        const newItem = await mockServices.createItem(itemData);
+        newItem.ownerId = currentUser.id;
+        newItem.ownerName = currentUser.name;
+        newItem.owner = {
+          id: currentUser.id,
+          name: currentUser.name,
+          avatar: currentUser.avatar,
+          trustScore: currentUser.trustScore
+        };
+        setItems(prev => [newItem, ...prev]);
+        addToast('Success (Demo Mode)', `Item "${itemData.title}" listed locally!`, 'success');
+        return newItem;
+      }
       addToast('Error', err.message, 'error');
     }
   };
@@ -176,6 +259,13 @@ export const AppProvider = ({ children }) => {
       addToast('Success', 'Item listing updated', 'success');
       return updated;
     } catch (err) {
+      if (isNetworkError(err)) {
+        console.warn("Backend down, editing item locally");
+        const updated = await mockServices.editItem(itemId, updatedData);
+        setItems(prev => prev.map(item => item.id === itemId ? { ...item, ...updatedData } : item));
+        addToast('Success (Demo Mode)', 'Item listing updated locally', 'success');
+        return updated;
+      }
       addToast('Error', err.message, 'error');
     }
   };
@@ -187,6 +277,13 @@ export const AppProvider = ({ children }) => {
       setItems(prev => prev.filter(item => item.id !== itemId));
       addToast('Deleted', 'Item has been removed.', 'info');
     } catch (err) {
+      if (isNetworkError(err)) {
+        console.warn("Backend down, deleting item locally");
+        await mockServices.deleteItem(itemId);
+        setItems(prev => prev.filter(item => item.id !== itemId));
+        addToast('Deleted (Demo Mode)', 'Item has been removed locally.', 'info');
+        return;
+      }
       addToast('Error', err.message, 'error');
     }
   };
@@ -197,18 +294,25 @@ export const AppProvider = ({ children }) => {
       if (!item) return;
       
       const newVal = !item.available;
-      await api.editItem(itemId, {
-        title: item.title,
-        description: item.description,
-        price: item.price,
-        category: item.category,
-        location: item.location,
-        deposit: item.deposit,
-        condition: item.condition,
-        images: item.images,
-        available: newVal
-      });
-      await loadItems();
+      try {
+        await api.editItem(itemId, {
+          title: item.title,
+          description: item.description,
+          price: item.price,
+          category: item.category,
+          location: item.location,
+          deposit: item.deposit,
+          condition: item.condition,
+          images: item.images,
+          available: newVal
+        });
+      } catch (err) {
+        if (!isNetworkError(err)) throw err;
+        console.warn("Backend down, toggling availability locally");
+        await mockServices.editItem(itemId, { available: newVal });
+      }
+      
+      setItems(prev => prev.map(i => i.id === itemId ? { ...i, available: newVal } : i));
       addToast(
         newVal ? 'Available' : 'Unavailable', 
         `Item status set to ${newVal ? 'Available' : 'Unavailable'}.`, 
@@ -236,6 +340,25 @@ export const AppProvider = ({ children }) => {
       
       return newReq;
     } catch (err) {
+      if (isNetworkError(err)) {
+        console.warn("Backend down, submitting request locally");
+        const newReq = await mockServices.sendBorrowRequest(itemId, startDate, endDate);
+        const item = items.find(i => i.id === itemId);
+        const mappedReq = {
+          id: newReq.id,
+          itemId: itemId,
+          itemName: item ? item.title : 'Item',
+          borrowerName: currentUser.name,
+          ownerName: item ? item.ownerName : 'Owner',
+          startDate: startDate,
+          endDate: endDate,
+          status: 'PENDING',
+          type: 'sent'
+        };
+        setRequests(prev => [mappedReq, ...prev]);
+        addToast('Request Sent (Demo Mode)', 'Borrow request submitted locally!', 'success');
+        return mappedReq;
+      }
       addToast('Error', err.message, 'error');
     }
   };
@@ -246,15 +369,19 @@ export const AppProvider = ({ children }) => {
       if (status === 'Declined') apiAction = 'reject';
       else if (status === 'Returned') apiAction = 'return';
 
-      await api.handleRequestStatus(requestId, apiAction);
-      
-      const userReqs = await api.fetchBorrowRequests();
-      setRequests(userReqs);
-      
-      const notifs = await api.fetchNotifications();
-      setNotifications(notifs);
-      
-      await loadItems();
+      try {
+        await api.handleRequestStatus(requestId, apiAction);
+        const userReqs = await api.fetchBorrowRequests();
+        setRequests(userReqs);
+        const notifs = await api.fetchNotifications();
+        setNotifications(notifs);
+        await loadItems();
+      } catch (err) {
+        if (!isNetworkError(err)) throw err;
+        console.warn("Backend down, handling request status locally");
+        await mockServices.handleRequestStatus(requestId, apiAction);
+        setRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: status.toUpperCase() } : req));
+      }
       
       let msg = '';
       if (status === 'Accepted') msg = 'Request approved! Coordinate pickup.';
@@ -288,6 +415,12 @@ export const AppProvider = ({ children }) => {
       const list = await api.markNotificationsRead();
       setNotifications(list);
     } catch (err) {
+      if (isNetworkError(err)) {
+        console.warn("Backend down, marking notifications read locally");
+        const list = await mockServices.markNotificationsRead();
+        setNotifications(list);
+        return;
+      }
       console.error(err);
     }
   };
@@ -298,6 +431,13 @@ export const AppProvider = ({ children }) => {
       setNotifications(list);
       addToast('Cleared', 'Notifications cleared.', 'info');
     } catch (err) {
+      if (isNetworkError(err)) {
+        console.warn("Backend down, clearing notifications locally");
+        const list = await mockServices.clearNotifications();
+        setNotifications(list);
+        addToast('Cleared (Demo Mode)', 'Notifications cleared locally.', 'info');
+        return;
+      }
       console.error(err);
     }
   };
