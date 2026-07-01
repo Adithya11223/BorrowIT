@@ -44,15 +44,10 @@ export default function Register() {
       setError('');
       
       // Step 1: Initiate creation on backend (checks uniqueness, stores temporarily, sends OTP)
-      const res = await api.initiateRegistration(fullName, email, password);
+      await api.initiateRegistration(fullName, email, password);
 
       setOtpStep(true);
-      if (res && res.verificationOtp) {
-        addToast('Verification Code Generated', `SMTP not set up on Render. Code: ${res.verificationOtp}`, 'success');
-        setOtpCode(res.verificationOtp);
-      } else {
-        addToast('Verification Sent', 'Please check your email/logs for the 6-digit OTP code.', 'info');
-      }
+      addToast('Verification Sent', 'Please check your email inbox for the 6-digit OTP code.', 'info');
     } catch (err) {
       setError(`${err.message || 'Registration failed'} (Endpoint: ${BASE_URL}/users/register/initiate)`);
     } finally {
@@ -88,13 +83,8 @@ export default function Register() {
     try {
       setResending(true);
       setError('');
-      const res = await api.resendRegistrationOtp(email);
-      if (res && res.verificationOtp) {
-        addToast('Verification Code Resent', `SMTP not set up. Code: ${res.verificationOtp}`, 'success');
-        setOtpCode(res.verificationOtp);
-      } else {
-        addToast('Code Resent', 'A new verification code has been dispatched.', 'success');
-      }
+      await api.resendRegistrationOtp(email);
+      addToast('Code Resent', 'A new verification code has been dispatched.', 'success');
       setCooldown(30);
     } catch (err) {
       setError(err.message || 'Failed to resend code');

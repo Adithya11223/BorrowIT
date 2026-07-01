@@ -30,20 +30,18 @@ public class UserController {
     // Initiate Registration (Temporary storage & OTP dispatch)
     @PostMapping("/register/initiate")
     public org.springframework.http.ResponseEntity<?> initiateRegistration(@Valid @RequestBody User user) {
-        com.borrowx.backend.dto.PendingRegistration pending = userService.initiateRegistration(user);
+        userService.initiateRegistration(user);
         return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
-                "message", "Verification code dispatched successfully",
-                "verificationOtp", pending.getOtp() // Return OTP in response for development convenience
+                "message", "Verification code dispatched successfully"
         ));
     }
 
     // Resend Registration OTP
     @PostMapping("/register/resend")
     public org.springframework.http.ResponseEntity<?> resendRegistrationOtp(@RequestParam String email) {
-        String otp = userService.resendRegistrationOtp(email);
+        userService.resendRegistrationOtp(email);
         return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
-                "message", "Verification code resent successfully",
-                "verificationOtp", otp
+                "message", "Verification code resent successfully"
         ));
     }
 
