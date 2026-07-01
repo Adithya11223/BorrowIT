@@ -38,11 +38,12 @@ export const api = {
     };
   },
 
-  register: async (fullName, email, password, phoneNumber = "9999999999") => {
+  register: async (fullName, email, password, phoneNumber) => {
+    const finalPhone = phoneNumber || String(Math.floor(1000000000 + Math.random() * 9000000000));
     const res = await fetch(`${BASE_URL}/users/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fullName, email, password, phoneNumber })
+      body: JSON.stringify({ fullName, email, password, phoneNumber: finalPhone })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: 'Registration failed' }));
@@ -51,11 +52,12 @@ export const api = {
     return api.login(email, password);
   },
 
-  initiateRegistration: async (fullName, email, password, phoneNumber = "9999999999") => {
+  initiateRegistration: async (fullName, email, password, phoneNumber) => {
+    const finalPhone = phoneNumber || String(Math.floor(1000000000 + Math.random() * 9000000000));
     const res = await fetch(`${BASE_URL}/users/register/initiate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fullName, email, password, phoneNumber })
+      body: JSON.stringify({ fullName, email, password, phoneNumber: finalPhone })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: 'Failed to initiate registration' }));
