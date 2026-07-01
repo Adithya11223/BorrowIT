@@ -115,7 +115,7 @@ export const mockServices = {
 
     // Apply category filter
     if (category && category !== 'all') {
-      items = items.filter(item => item.category === category);
+      items = items.filter(item => item.category.toLowerCase() === category.toLowerCase());
     }
 
     // Apply search query

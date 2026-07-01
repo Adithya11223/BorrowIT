@@ -60,6 +60,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/users/register",
                                 "/api/users/login",
+                                "/api/users/verify-otp",
+                                "/api/users/resend-otp",
 
                                 // Swagger/OpenAPI
                                 "/swagger-ui/**",
@@ -71,7 +73,10 @@ public class SecurityConfig {
                                 "/webjars/**",
 
                                 // Uploaded Images
-                                "/uploads/**"
+                                "/uploads/**",
+
+                                // Help / Contact Support
+                                "/api/support/contact"
                         ).permitAll()
 
                         // Public Item APIs

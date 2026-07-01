@@ -137,6 +137,11 @@ export default function MyItems() {
                             <Icons.Eye className="w-4 h-4" />
                           </button>
                         </Link>
+                        <Link to={`/edit-item/${item.id}`}>
+                          <button className="p-2 text-slate-500 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" title="Edit Listing">
+                            <Icons.Edit className="w-4 h-4" />
+                          </button>
+                        </Link>
                         <button 
                           onClick={() => handleDeleteTrigger(item.id)}
                           className="p-2 text-slate-500 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors" 

@@ -97,11 +97,12 @@ export default function Browse() {
 
   const categories = [
     { id: 'all', name: 'All' },
-    { id: 'Cameras', name: 'Cameras' },
-    { id: 'Electronics', name: 'Electronics' },
-    { id: 'Sports', name: 'Sports' },
-    { id: 'Tools', name: 'Tools' },
-    { id: 'Home', name: 'Home' }
+    { id: 'cameras', name: 'Cameras' },
+    { id: 'electronics', name: 'Electronics' },
+    { id: 'sports', name: 'Sports' },
+    { id: 'tools', name: 'Tools' },
+    { id: 'home', name: 'Home' },
+    { id: 'books', name: 'Books' }
   ];
 
   return (

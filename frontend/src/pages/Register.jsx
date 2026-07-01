@@ -30,7 +30,11 @@ export default function Register() {
       await register(fullName, email, password);
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      if (err.message && err.message.includes('not verified')) {
+        navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
+      } else {
+        setError(err.message || 'Registration failed');
+      }
     } finally {
       setLoading(false);
     }

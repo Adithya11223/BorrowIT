@@ -6,7 +6,7 @@ export const categories = [
   { id: 'cameras', name: 'Cameras', icon: 'Camera', count: 0 },
   { id: 'sports', name: 'Sports', icon: 'Activity', count: 0 },
   { id: 'tools', name: 'Tools', icon: 'Wrench', count: 0 },
-  { id: 'appliances', name: 'Home Appliances', icon: 'Home', count: 0 }
+  { id: 'home', name: 'Home Appliances', icon: 'Home', count: 0 }
 ];
 
 export const initialUsers = {};

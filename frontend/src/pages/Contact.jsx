@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { api } from '../services/api';
 import { Card, Button, Input } from '../components/UI';
 import * as Icons from 'lucide-react';
 
@@ -13,15 +14,19 @@ export default function Contact() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !email || !message) return;
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      setLoading(true);
+      await api.sendSupportMessage(name, email, message);
       setSent(true);
       addToast('Message Sent', 'Our support team will get back to you shortly.', 'success');
-    }, 1000);
+    } catch (err) {
+      addToast('Error', err.message || 'Failed to submit form. Check connection or try again.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

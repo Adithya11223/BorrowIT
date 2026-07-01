@@ -30,7 +30,11 @@ export default function Login() {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Login failed');
+      if (err.message && err.message.includes('not verified')) {
+        navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
+      } else {
+        setError(err.message || 'Login failed');
+      }
     } finally {
       setLoading(false);
     }

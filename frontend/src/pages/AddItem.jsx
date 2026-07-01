@@ -1,15 +1,17 @@
 // AddItem.jsx - Multi-step listing creator page with Cam/Upload & Geolocation support for BorrowIT
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Button, Card, Input } from '../components/UI';
 import { categories } from '../services/mockData';
 import * as Icons from 'lucide-react';
 
 export default function AddItem() {
-  const { createItem, addToast } = useApp();
+  const { createItem, editItem, items, addToast } = useApp();
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = !!id;
   const [currentStep, setCurrentStep] = useState(1);
 
   // Form Fields State
@@ -28,6 +30,27 @@ export default function AddItem() {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  // Load existing listing data if in edit mode
+  useEffect(() => {
+    if (isEditMode && items.length > 0) {
+      const itemToEdit = items.find(item => String(item.id) === String(id));
+      if (itemToEdit) {
+        setFormData({
+          title: itemToEdit.title || '',
+          category: itemToEdit.category || 'electronics',
+          description: itemToEdit.description || '',
+          condition: itemToEdit.condition || 'Good',
+          location: itemToEdit.location || 'Bangalore, Karnataka',
+          latitude: itemToEdit.latitude || 12.9716,
+          longitude: itemToEdit.longitude || 77.5946,
+          price: itemToEdit.price || '',
+          deposit: itemToEdit.deposit || '',
+          images: itemToEdit.images || []
+        });
+      }
+    }
+  }, [id, isEditMode, items]);
 
   // Permission Explanations State
   const [permissionModal, setPermissionModal] = useState(null); // 'camera' | 'location' | 'photos'
@@ -83,7 +106,7 @@ export default function AddItem() {
     
     try {
       setLoading(true);
-      await createItem({
+      const itemData = {
         title: formData.title,
         category: formData.category,
         description: formData.description,
@@ -99,7 +122,13 @@ export default function AddItem() {
           Location: formData.location
         },
         images: formData.images
-      });
+      };
+
+      if (isEditMode) {
+        await editItem(id, itemData);
+      } else {
+        await createItem(itemData);
+      }
       navigate('/my-items');
     } catch (err) {
       console.error(err);
@@ -317,8 +346,12 @@ export default function AddItem() {
       
       {/* Title */}
       <div>
-        <h1 className="text-2xl font-black text-white">List a New Item</h1>
-        <p className="text-sm text-slate-500 mt-1">Lend your idle assets to verified members in your area.</p>
+        <h1 className="text-2xl font-black text-white">
+          {isEditMode ? 'Edit Item Listing' : 'List a New Item'}
+        </h1>
+        <p className="text-sm text-slate-500 mt-1">
+          {isEditMode ? 'Update your listing details and specifications.' : 'Lend your idle assets to verified members in your area.'}
+        </p>
       </div>
 
       {/* Step Indicators */}
@@ -637,7 +670,7 @@ export default function AddItem() {
               loading={loading}
               icon="Check"
             >
-              Publish Item
+              {isEditMode ? 'Save Changes' : 'Publish Item'}
             </Button>
           ) : (
             <Button

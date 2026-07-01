@@ -13,6 +13,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
+import VerifyOtp from './pages/VerifyOtp';
 import Browse from './pages/Browse';
 import ItemDetails from './pages/ItemDetails';
 import Dashboard from './pages/Dashboard';
@@ -37,7 +38,7 @@ function MainAppContent() {
   const navigate = useNavigate();
 
   // Check if auth route (no status/nav bars)
-  const isAuthRoute = ['/login', '/register', '/forgot-password'].includes(location.pathname);
+  const isAuthRoute = ['/login', '/register', '/forgot-password', '/verify-otp'].includes(location.pathname);
   
   if (isAuthRoute) {
     return (
@@ -46,6 +47,7 @@ function MainAppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
         </Routes>
         <ToastContainer toasts={toasts} removeToast={removeToast} />
       </div>
@@ -67,6 +69,7 @@ function MainAppContent() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/my-items" element={<MyItems />} />
           <Route path="/add-item" element={<AddItem />} />
+          <Route path="/edit-item/:id" element={<AddItem />} />
           <Route path="/requests" element={<BorrowRequests />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/notifications" element={<Notifications />} />

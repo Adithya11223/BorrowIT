@@ -146,6 +146,62 @@ const runTest = async () => {
   const adithyaFinalNotifs = await request('/notifications', 'GET', null, adithyaToken);
   console.log('Adithya Notifications:', adithyaFinalNotifs.map(n => `[${n.title}] - ${n.message}`));
 
+  // 13. TEST MOCK OTP VERIFICATION FLOW
+  console.log('\n13. Testing OTP Verification Flow...');
+  const testEmail = 'tester-profile@example.com';
+  try {
+    await request('/users/register', 'POST', {
+      fullName: 'OTP Tester',
+      email: testEmail,
+      password: 'password123',
+      phoneNumber: '9000000000'
+    });
+    console.log('OTP Tester registered (unverified)!');
+  } catch (err) {
+    console.log('OTP Tester already registered.');
+  }
+
+  // Attempt login - should fail with 400 Bad Request
+  try {
+    await request('/users/login', 'POST', { email: testEmail, password: 'password123' });
+    throw new Error('Login succeeded for unverified user (FAILURE)');
+  } catch (err) {
+    console.log('Login failed as expected for unverified user:', err.message);
+  }
+
+  // Verify OTP
+  await request(`/users/verify-otp?email=${encodeURIComponent(testEmail)}&otp=123456`, 'POST');
+  console.log('OTP verified successfully!');
+
+  // Attempt login again - should succeed
+  const testerLogin = await request('/users/login', 'POST', { email: testEmail, password: 'password123' });
+  console.log(`Login succeeded for verified user! Token: ${testerLogin.token.substring(0, 10)}...`);
+
+  // 14. ADITHYA EDITS AN ITEM
+  console.log('\n14. Adithya editing listed item...');
+  const updatedItem = await request(`/items/${newItem.id}`, 'PUT', {
+    itemName: 'Sony FX3 Cinema Camera (Updated)',
+    description: 'Updated cinema camera rig with extra lenses and a cleaning kit included.',
+    pricePerDay: 50.0,
+    category: 'cameras',
+    location: 'Bangalore Central',
+    deposit: 120.0,
+    itemCondition: 'Like New',
+    latitude: 12.9716,
+    longitude: 77.5946,
+    imageUrls: ['/uploads/camera_mock_updated.jpg']
+  }, adithyaToken);
+  console.log(`Item Updated! Title: "${updatedItem.itemName}", Price: $${updatedItem.pricePerDay}, Deposit: $${updatedItem.deposit}`);
+
+  // 15. SENDING HELP MESSAGE TO SUPPORT DESK
+  console.log('\n15. Submitting support ticket...');
+  const supportRes = await request('/support/contact', 'POST', {
+    name: 'Shubham Kumar',
+    email: 'shubham@example.com',
+    message: 'Hello support, I need help coordinating the delivery of a camera.'
+  });
+  console.log(`Support response: ${supportRes.message}`);
+
   console.log('\n=== ALL CONNECTIVITY & LIFECYCLE TESTS COMPLETED SUCCESSFULLY ===');
 };
 

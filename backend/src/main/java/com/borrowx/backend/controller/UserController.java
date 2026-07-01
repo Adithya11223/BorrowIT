@@ -64,4 +64,21 @@ public class UserController {
 
         return "User deleted successfully!";
     }
+
+    // Verify OTP
+    @PostMapping("/verify-otp")
+    public org.springframework.http.ResponseEntity<?> verifyOtp(
+            @RequestParam String email,
+            @RequestParam String otp) {
+        userService.verifyOtp(email, otp);
+        return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Account verified successfully"));
+    }
+
+    // Resend OTP
+    @PostMapping("/resend-otp")
+    public org.springframework.http.ResponseEntity<?> resendOtp(
+            @RequestParam String email) {
+        userService.resendOtp(email);
+        return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Verification code resent"));
+    }
 }

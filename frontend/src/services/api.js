@@ -63,6 +63,28 @@ export const api = {
     }
   },
 
+  verifyOtp: async (email, otp) => {
+    const res = await fetch(`${BASE_URL}/users/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`, {
+      method: 'POST'
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: 'Invalid verification code' }));
+      throw new Error(err.message || 'Verification failed');
+    }
+    return res.json();
+  },
+
+  resendOtp: async (email) => {
+    const res = await fetch(`${BASE_URL}/users/resend-otp?email=${encodeURIComponent(email)}`, {
+      method: 'POST'
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: 'Failed to resend OTP' }));
+      throw new Error(err.message || 'Failed to resend code');
+    }
+    return res.json();
+  },
+
   editProfile: async (userId, fullName, email, phoneNumber) => {
     const res = await fetch(`${BASE_URL}/users/${userId}`, {
       method: 'PUT',
@@ -324,6 +346,19 @@ export const api = {
       time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       status: msg.status
     };
+  },
+
+  sendSupportMessage: async (name, email, message) => {
+    const res = await fetch(`${BASE_URL}/support/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, message })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: 'Failed to send support inquiry' }));
+      throw new Error(err.message || 'Support query submission failed');
+    }
+    return res.json();
   },
 
   // --- NOTIFICATION ENDPOINTS ---

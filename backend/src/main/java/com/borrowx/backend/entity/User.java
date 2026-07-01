@@ -44,6 +44,10 @@ public class User {
 
     private Boolean verified = false;
 
+    private String verificationOtp;
+
+    private java.time.LocalDateTime otpExpiry;
+
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Item> items;
