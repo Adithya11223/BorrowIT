@@ -51,6 +51,19 @@ export const api = {
     return api.login(email, password);
   },
 
+  registerOnly: async (fullName, email, password, phoneNumber = "9999999999") => {
+    const res = await fetch(`${BASE_URL}/users/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName, email, password, phoneNumber })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: 'Registration failed' }));
+      throw new Error(err.message || 'Registration failed');
+    }
+    return res.json();
+  },
+
   socialLogin: async (provider) => {
     const email = `${provider.toLowerCase()}.user@example.com`;
     const fullName = `${provider} User`;
