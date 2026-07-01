@@ -60,6 +60,12 @@ public class UserController {
         return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Database successfully reset and cleared."));
     }
 
+    // Get Mail Dispatch Logs (For testing/debugging purposes)
+    @GetMapping("/mail-logs")
+    public java.util.List<String> getMailLogs() {
+        return com.borrowx.backend.service.EmailService.getMailLogs();
+    }
+
     // Login User
     @PostMapping("/login")
     public LoginResponseDTO login(@RequestBody LoginRequestDTO loginRequest) {

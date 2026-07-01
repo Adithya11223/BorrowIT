@@ -63,6 +63,7 @@ public class SecurityConfig {
                                 "/api/users/register/resend",
                                 "/api/users/register/verify",
                                 "/api/users/reset-db",
+                                "/api/users/mail-logs",
                                 "/api/users/login",
                                 "/api/users/verify-otp",
                                 "/api/users/resend-otp",

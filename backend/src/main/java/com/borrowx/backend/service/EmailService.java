@@ -11,6 +11,11 @@ public class EmailService {
 
     private final String resendApiKey;
     private final HttpClient httpClient;
+    private static final java.util.List<String> mailLogs = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    public static java.util.List<String> getMailLogs() {
+        return mailLogs;
+    }
 
     public EmailService() {
         String envKey = System.getenv("RESEND_API_KEY");
@@ -40,13 +45,19 @@ public class EmailService {
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                    System.out.println("[Resend Service] Email sent successfully to " + to);
+                    String logMsg = "[SUCCESS] Resend sent email to " + to + ". Status: " + response.statusCode();
+                    System.out.println(logMsg);
+                    mailLogs.add(java.time.LocalDateTime.now() + " - " + logMsg);
                 } else {
-                    System.err.println("[Resend Service] Failed to send email to " + to + ". Status: " + response.statusCode() + ", Response: " + response.body());
+                    String logMsg = "[ERROR] Resend failed for " + to + ". Status: " + response.statusCode() + ", Response: " + response.body();
+                    System.err.println(logMsg);
+                    mailLogs.add(java.time.LocalDateTime.now() + " - " + logMsg);
                     printFallback(to, subject, body);
                 }
             } catch (Exception e) {
-                System.err.println("[Resend Service] Exception sending email to " + to + ": " + e.getMessage());
+                String logMsg = "[EXCEPTION] Resend error for " + to + ": " + e.getMessage();
+                System.err.println(logMsg);
+                mailLogs.add(java.time.LocalDateTime.now() + " - " + logMsg);
                 printFallback(to, subject, body);
             }
         });
