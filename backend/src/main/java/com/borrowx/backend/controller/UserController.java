@@ -21,44 +21,15 @@ public class UserController {
         this.userService = userService;
     }
 
-    // Initiate Registration (Step 1 Name/Email -> generate & send OTP)
-    @PostMapping("/register/initiate")
-    public org.springframework.http.ResponseEntity<?> initiateRegistration(@RequestBody java.util.Map<String, String> payload) {
-        String fullName = payload.get("fullName");
-        String email = payload.get("email");
-        if (fullName == null || fullName.trim().isEmpty() || email == null || email.trim().isEmpty()) {
-            throw new com.borrowx.backend.exception.BadRequestException("Full Name and Email are required.");
-        }
-        userService.initiateRegistration(fullName, email);
-        return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
-                "message", "Verification code dispatched successfully"
-        ));
-    }
-
-    // Resend Registration OTP
-    @PostMapping("/register/resend")
-    public org.springframework.http.ResponseEntity<?> resendRegistrationOtp(@RequestParam String email) {
-        userService.resendRegistrationOtp(email);
-        return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
-                "message", "Verification code resent successfully"
-        ));
-    }
-
-    // Verify Registration OTP (Step 3 verify OTP)
-    @PostMapping("/register/verify")
-    public org.springframework.http.ResponseEntity<?> verifyRegistrationOtp(
-            @RequestParam String email,
-            @RequestParam String otp) {
-        userService.verifyRegistrationOtp(email, otp);
-        return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
-                "message", "Email verified successfully"
-        ));
-    }
-
-    // Complete Registration (Step 4 final user creation & JWT login)
+    // Register User (Direct Sign Up & automatic login)
     @PostMapping("/register")
-    public LoginResponseDTO completeRegistration(@Valid @RequestBody User user) {
-        return userService.completeRegistration(user);
+    public LoginResponseDTO register(@Valid @RequestBody User user) {
+        String plainPassword = user.getPassword();
+        User registered = userService.registerUser(user);
+        com.borrowx.backend.dto.LoginRequestDTO loginReq = new com.borrowx.backend.dto.LoginRequestDTO();
+        loginReq.setEmail(registered.getEmail());
+        loginReq.setPassword(plainPassword);
+        return userService.login(loginReq);
     }
 
     // Reset Database (Wipes all tables)

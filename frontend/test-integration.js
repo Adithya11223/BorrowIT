@@ -20,23 +20,14 @@ const request = async (path, method = 'GET', body = null, token = null) => {
 const runTest = async () => {
   console.log('=== STARTING BORROWX FULL INTEGRATION TEST ===\n');
 
-  // 1. REGISTER & LOGIN ADITHYA (OTP Flow)
+  // 1. REGISTER & LOGIN ADITHYA (Direct Flow)
   console.log('1. Registering/Logging in Adithya...');
   let adithyaToken;
   let adithyaUser;
   const adithyaEmail = `test-adithya-${Date.now()}@example.com`;
   const adithyaPhone = String(Math.floor(1000000000 + Math.random() * 9000000000));
   
-  console.log(`Initiating registration for Adithya (${adithyaEmail})...`);
-  await request('/users/register/initiate', 'POST', {
-    fullName: 'Adithya Verma',
-    email: adithyaEmail
-  });
-
-  console.log('Verifying registration OTP for Adithya...');
-  await request(`/users/register/verify?email=${encodeURIComponent(adithyaEmail)}&otp=123456`, 'POST');
-
-  console.log('Completing registration for Adithya...');
+  console.log(`Registering Adithya (${adithyaEmail})...`);
   const adithyaRegisterResponse = await request('/users/register', 'POST', {
     fullName: 'Adithya Verma',
     email: adithyaEmail,
@@ -63,23 +54,14 @@ const runTest = async () => {
   }, adithyaToken);
   console.log(`Item Listed! Item ID: ${newItem.id}, Title: ${newItem.itemName}, Condition: ${newItem.itemCondition}, Deposit: $${newItem.deposit}\n`);
 
-  // 3. REGISTER & LOGIN SHUBHAM (OTP Flow)
+  // 3. REGISTER & LOGIN SHUBHAM (Direct Flow)
   console.log('3. Registering/Logging in Shubham...');
   let shubhamToken;
   let shubhamUser;
   const shubhamEmail = `test-shubham-${Date.now()}@example.com`;
   const shubhamPhone = String(Math.floor(1000000000 + Math.random() * 9000000000));
   
-  console.log(`Initiating registration for Shubham (${shubhamEmail})...`);
-  await request('/users/register/initiate', 'POST', {
-    fullName: 'Shubham Kumar',
-    email: shubhamEmail
-  });
-
-  console.log('Verifying registration OTP for Shubham...');
-  await request(`/users/register/verify?email=${encodeURIComponent(shubhamEmail)}&otp=123456`, 'POST');
-
-  console.log('Completing registration for Shubham...');
+  console.log(`Registering Shubham (${shubhamEmail})...`);
   const shubhamRegisterResponse = await request('/users/register', 'POST', {
     fullName: 'Shubham Kumar',
     email: shubhamEmail,
@@ -152,49 +134,34 @@ const runTest = async () => {
   const adithyaFinalNotifs = await request('/notifications', 'GET', null, adithyaToken);
   console.log('Adithya Notifications:', adithyaFinalNotifs.map(n => `[${n.title}] - ${n.message}`));
 
-  // 13. TEST MOCK OTP VERIFICATION FLOW (TEMPORARY STORAGE)
-  console.log('\n13. Testing OTP Verification Flow (Temporary Storage)...');
+  // 13. TEST MOCK DIRECT REGISTRATION & UNIQUENESS
+  console.log('\n13. Testing Direct Registration Uniqueness & Authentication...');
   const testEmail = `tester-profile-${Date.now()}@example.com`;
-  
-  // Initiate registration
   const testerPhone = String(Math.floor(1000000000 + Math.random() * 9000000000));
-  await request('/users/register/initiate', 'POST', {
-    fullName: 'OTP Tester',
-    email: testEmail
-  });
-  console.log('OTP Tester registration initiated (stored temporarily).');
-
-  // Attempt login - should fail because user is not yet created in the DB
-  try {
-    await request('/users/login', 'POST', { email: testEmail, password: 'password123' });
-    throw new Error('Login succeeded for uncreated user (FAILURE)');
-  } catch (err) {
-    console.log('Login failed as expected for pending user:', err.message);
-  }
-
-  // Verify OTP
-  await request(`/users/register/verify?email=${encodeURIComponent(testEmail)}&otp=123456`, 'POST');
-  console.log('OTP verified successfully!');
-
-  // Attempt login again - should still fail because user is not created yet
-  try {
-    await request('/users/login', 'POST', { email: testEmail, password: 'password123' });
-    throw new Error('Login succeeded for verified but uncreated user (FAILURE)');
-  } catch (err) {
-    console.log('Login failed as expected for verified but uncreated user:', err.message);
-  }
-
-  // Finalize signup
-  console.log('Finalizing signup with phone & password...');
+  
+  // Register user directly
   const testerRegister = await request('/users/register', 'POST', {
-    fullName: 'OTP Tester',
+    fullName: 'Direct Tester',
     email: testEmail,
     password: 'password123',
     phoneNumber: testerPhone
   });
-  console.log('User created in DB! Token returned:', testerRegister.token.substring(0, 10) + '...');
+  console.log(`Direct registration completed! Token: ${testerRegister.token.substring(0, 10)}...`);
 
-  // Attempt login again - should succeed
+  // Attempt duplicate register - should fail
+  try {
+    await request('/users/register', 'POST', {
+      fullName: 'Direct Tester Dup',
+      email: testEmail,
+      password: 'password123',
+      phoneNumber: testerPhone
+    });
+    throw new Error('Registration succeeded for duplicate email (FAILURE)');
+  } catch (err) {
+    console.log('Registration failed as expected for duplicate email:', err.message);
+  }
+
+  // Attempt login - should succeed
   const testerLogin = await request('/users/login', 'POST', { email: testEmail, password: 'password123' });
   console.log(`Login succeeded for verified user! Token: ${testerLogin.token.substring(0, 10)}...`);
 

@@ -51,40 +51,6 @@ export const api = {
     return res.json();
   },
 
-  initiateRegistration: async (fullName, email) => {
-    const res = await fetch(`${BASE_URL}/users/register/initiate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fullName, email })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: 'Failed to initiate registration' }));
-      throw new Error(err.message || 'Failed to initiate registration');
-    }
-    return res.json();
-  },
-
-  resendRegistrationOtp: async (email) => {
-    const res = await fetch(`${BASE_URL}/users/register/resend?email=${encodeURIComponent(email)}`, {
-      method: 'POST'
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: 'Failed to resend code' }));
-      throw new Error(err.message || 'Failed to resend code');
-    }
-    return res.json();
-  },
-
-  verifyRegistrationOtp: async (email, otp) => {
-    const res = await fetch(`${BASE_URL}/users/register/verify?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`, {
-      method: 'POST'
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: 'Failed to verify code' }));
-      throw new Error(err.message || 'Failed to verify code');
-    }
-    return res.json();
-  },
 
   socialLogin: async (provider) => {
     const email = `${provider.toLowerCase()}.user@example.com`;
