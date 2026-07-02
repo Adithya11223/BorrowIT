@@ -1,6 +1,9 @@
 // api.js - Production connection service layer mapping frontend requests to Spring Boot / PostgreSQL endpoints
 
-export const BASE_URL = import.meta.env.VITE_API_URL || 'https://borrowit-backend-3xdn.onrender.com/api';
+export const BASE_URL = import.meta.env.VITE_API_URL || 
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:8080/api'
+    : 'https://borrowit-backend-3xdn.onrender.com/api');
 
 const getHeaders = () => {
   const token = localStorage.getItem('borrowit_token');
@@ -48,7 +51,20 @@ export const api = {
       const err = await res.json().catch(() => ({ message: 'Registration failed' }));
       throw new Error(err.message || 'Registration failed');
     }
-    return res.json();
+    const data = await res.json();
+    localStorage.setItem('borrowit_token', data.token);
+    return {
+      token: data.token,
+      user: {
+        id: data.user.id,
+        name: data.user.fullName,
+        email: data.user.email,
+        phone: data.user.phoneNumber,
+        trustScore: data.user.trustScore / 10.0,
+        avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${data.user.id}`,
+        verified: data.user.verified
+      }
+    };
   },
 
 

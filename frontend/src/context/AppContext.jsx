@@ -158,12 +158,8 @@ export const AppProvider = ({ children }) => {
 
   const completeSignupSession = async (token, user) => {
     localStorage.setItem('borrowit_token', token);
-    const mappedUser = {
-      ...user,
-      name: user.fullName
-    };
-    setCurrentUser(mappedUser);
-    localStorage.setItem('borrowit_user', JSON.stringify(mappedUser));
+    setCurrentUser(user);
+    localStorage.setItem('borrowit_user', JSON.stringify(user));
     try {
       const userReqs = await api.fetchBorrowRequests();
       setRequests(userReqs);

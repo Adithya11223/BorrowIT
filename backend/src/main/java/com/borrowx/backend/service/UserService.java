@@ -78,9 +78,7 @@ public class UserService {
             throw new BadRequestException("Invalid email or password");
         }
 
-        if (!Boolean.TRUE.equals(user.getVerified())) {
-            throw new BadRequestException("Account not verified.");
-        }
+
 
         String token = jwtService.generateToken(user.getEmail());
         return new LoginResponseDTO(token, convertToDTO(user));
